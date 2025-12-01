@@ -1,0 +1,100 @@
+{
+  "categories": [
+    {
+      "id": "information_gathering",
+      "name": "Information Gathering",
+      "tools": [
+        {
+          "id": "nmap",
+          "name": "Nmap",
+          "description": "Network mapper for host discovery, port scanning, and simple service enumeration.",
+          "install_commands": [
+            "sudo apt install nmap",
+            "# Termux: pkg install nmap"
+          ]
+        },
+        {
+          "id": "whois",
+          "name": "whois",
+          "description": "Query registration information for domains and IP addresses.",
+          "install_commands": [
+            "sudo apt install whois",
+            "# Termux: pkg install whois"
+          ]
+        },
+        {
+          "id": "dnsenum",
+          "name": "dnsenum",
+          "description": "Enumerate DNS information for a given domain.",
+          "install_commands": [
+            "sudo apt install dnsenum",
+            "# Termux: pkg install dnsenum (if available)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "web_scanners",
+      "name": "Web Scanners",
+      "tools": [
+        {
+          "id": "nikto",
+          "name": "Nikto",
+          "description": "Web server scanner that looks for common vulnerabilities and misconfigurations.",
+          "install_commands": [
+            "sudo apt install nikto",
+            "# Termux: pkg install nikto (if available)"
+          ]
+        },
+        {
+          "id": "sqlmap",
+          "name": "sqlmap",
+          "description": "Automated tool for detecting and exploiting SQL injection vulnerabilities for authorized testing.",
+          "install_commands": [
+            "sudo apt install sqlmap",
+            "# Termux: pkg install sqlmap"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "password_attacks",
+      "name": "Password Attacks",
+      "tools": [
+        {
+          "id": "hydra",
+          "name": "Hydra",
+          "description": "Network login cracker supporting many protocols (use only on systems you are authorized to test).",
+          "install_commands": [
+            "sudo apt install hydra",
+            "# Termux: pkg install hydra (if available)"
+          ]
+        },
+        {
+          "id": "john",
+          "name": "John the Ripper",
+          "description": "Password cracker for offline password hash auditing.",
+          "install_commands": [
+            "sudo apt install john",
+            "# Termux: pkg install john (if available)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wireless",
+      "name": "Wireless",
+      "tools": [
+        {
+          "id": "aircrack-ng",
+          "name": "aircrack-ng",
+          "description": "Suite of tools for wireless network auditing (WEP/WPA handshake capture and analysis).",
+          "install_commands": [
+            "sudo apt install aircrack-ng",
+            "# Termux: pkg install aircrack-ng (if available)"
+          ]
+        }
+      ]
+    }
+  ]
+}

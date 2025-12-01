@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "darkfly-tool-modern"
+version = "5.0.0a1"
+description = "Modern Python 3 CLI for DarkFly-Tool (wrapper/launcher for security tools)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+  { name = "DarkFly-Tool maintainers" }
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Environment :: Console",
+  "Operating System :: POSIX :: Linux"
+]
+
+[project.optional-dependencies]
+# Keep dependencies minimal; YAML can be added later if desired.
+ dev = [
+  "pytest>=7",
+  "pytest-cov>=4",
+]
+
+[project.scripts]
+# New modern CLI entrypoint
+DarkFly5 = "darkfly.cli:main"
+
+# Minimal setuptools-style config to treat src as package root
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["darkfly*"]
