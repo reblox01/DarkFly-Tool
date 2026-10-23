@@ -1,0 +1,674 @@
+{
+  "schema_version": 2,
+  "tools": [
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "scanning"
+      ],
+      "description": "Network mapper for host discovery, port scanning, service and OS detection, and NSE scripting. The default scanner; pair with RustScan when you need fast discovery first.",
+      "homepage": "https://nmap.org",
+      "id": "nmap",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "nmap",
+        "termux_package": "nmap",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "Nmap",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "nmap",
+      "size_mb_estimate": 30,
+      "source": "https://github.com/nmap/nmap",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon"
+      ],
+      "description": "Query registration information (owner, registrar, dates) for domains and IP addresses.",
+      "homepage": "https://github.com/rfc1036/whois",
+      "id": "whois",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "whois",
+        "termux_package": "whois",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "whois",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "whois",
+      "size_mb_estimate": 2,
+      "source": "https://github.com/rfc1036/whois",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "dns"
+      ],
+      "description": "Enumerate DNS information for a domain: hosts, name servers, MX records, and zone transfer attempts.",
+      "homepage": "https://github.com/fwaeytens/dnsenum",
+      "id": "dnsenum",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "dnsenum",
+        "termux_package": "dnsenum",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "dnsenum",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "dnsenum",
+      "size_mb_estimate": 5,
+      "source": "https://github.com/fwaeytens/dnsenum",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "scanning"
+      ],
+      "description": "Web server scanner that checks for dangerous files, outdated server software, and common misconfigurations.",
+      "homepage": "https://github.com/sullo/nikto",
+      "id": "nikto",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "nikto",
+        "termux_package": "nikto",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "Nikto",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "nikto",
+      "size_mb_estimate": 10,
+      "source": "https://github.com/sullo/nikto",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "exploitation"
+      ],
+      "description": "Automatic SQL injection detection and exploitation for authorised testing, with database fingerprinting and data extraction.",
+      "homepage": "https://sqlmap.org",
+      "id": "sqlmap",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "sqlmap",
+        "termux_package": "sqlmap",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "sqlmap",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "sqlmap",
+      "size_mb_estimate": 60,
+      "source": "https://github.com/sqlmapproject/sqlmap",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [
+        "thc-hydra"
+      ],
+      "categories": [
+        "passwords",
+        "offensive"
+      ],
+      "description": "Fast network login cracker supporting many protocols (SSH, FTP, HTTP forms, SMB, and more). Use only on systems you are authorised to test.",
+      "homepage": "https://github.com/vanhauser-thc/thc-hydra",
+      "id": "hydra",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "hydra",
+        "termux_package": "hydra",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "AGPL-3.0-only",
+      "name": "Hydra",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "hydra",
+      "size_mb_estimate": 10,
+      "source": "https://github.com/vanhauser-thc/thc-hydra",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [
+        "john-the-ripper"
+      ],
+      "categories": [
+        "passwords"
+      ],
+      "description": "Offline password hash cracker and hash auditing tool, with a large set of format extractors (the *2john tools). The sensible default cracker on Termux, where there is no useful GPU path.",
+      "homepage": "https://www.openwall.com/john/",
+      "id": "john",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "john",
+        "termux_package": "john",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "John the Ripper",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "john",
+      "size_mb_estimate": 40,
+      "source": "https://github.com/openwall/john",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "wireless"
+      ],
+      "description": "Suite for wireless network auditing: packet capture analysis, WEP and WPA handshake cracking. Capturing needs monitor-mode hardware, which most phones do not provide.",
+      "homepage": "https://www.aircrack-ng.org",
+      "id": "aircrack-ng",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "aircrack-ng",
+        "termux_package": "aircrack-ng",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "Aircrack-ng",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "aircrack-ng",
+      "size_mb_estimate": 15,
+      "source": "https://github.com/aircrack-ng/aircrack-ng",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "scanning"
+      ],
+      "description": "Extremely fast Internet-scale port scanner. Speed without service detection is not a finished scan; feed its results into Nmap for depth.",
+      "homepage": "https://github.com/robertdavidgraham/masscan",
+      "id": "masscan",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "masscan",
+        "termux_package": "masscan",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "AGPL-3.0-only",
+      "name": "Masscan",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "masscan",
+      "size_mb_estimate": 5,
+      "source": "https://github.com/robertdavidgraham/masscan",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "scanning",
+        "vuln-scanning"
+      ],
+      "description": "Template-based vulnerability scanner from ProjectDiscovery: fast, community-driven YAML templates for known vulnerabilities, misconfigurations, and exposures.",
+      "homepage": "https://github.com/projectdiscovery/nuclei",
+      "id": "nuclei",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/projectdiscovery/nuclei/v3/cmd/nuclei",
+        "termux_package": null,
+        "version_pin": "v3.3.0"
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Nuclei",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "nuclei",
+      "size_mb_estimate": 60,
+      "source": "https://github.com/projectdiscovery/nuclei",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "dns"
+      ],
+      "description": "Fast passive subdomain enumeration from ProjectDiscovery, using online sources to map a domain's attack surface.",
+      "homepage": "https://github.com/projectdiscovery/subfinder",
+      "id": "subfinder",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/projectdiscovery/subfinder/v2/cmd/subfinder",
+        "termux_package": null,
+        "version_pin": "v2.6.7"
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Subfinder",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "subfinder",
+      "size_mb_estimate": 30,
+      "source": "https://github.com/projectdiscovery/subfinder",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "pd-httpx"
+      ],
+      "categories": [
+        "recon",
+        "web"
+      ],
+      "description": "ProjectDiscovery's fast HTTP probing toolkit: status codes, titles, technologies, TLS details, and content lengths for lists of hosts. Not the Python library of the same name.",
+      "homepage": "https://github.com/projectdiscovery/httpx",
+      "id": "httpx",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/projectdiscovery/httpx/cmd/httpx",
+        "termux_package": null,
+        "version_pin": "v1.6.9"
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "httpx",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "httpx",
+      "size_mb_estimate": 25,
+      "source": "https://github.com/projectdiscovery/httpx",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "fuzzing"
+      ],
+      "description": "Fast web fuzzer written in Go: directory and file discovery, vhost fuzzing, and parameter fuzzing with the FUZZ keyword placed anywhere in the request.",
+      "homepage": "https://github.com/ffuf/ffuf",
+      "id": "ffuf",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/ffuf/ffuf/v2",
+        "termux_package": null,
+        "version_pin": "v2.1.0"
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "ffuf",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "ffuf",
+      "size_mb_estimate": 15,
+      "source": "https://github.com/ffuf/ffuf",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "fuzzing"
+      ],
+      "description": "Directory, DNS, and vhost brute-forcing tool written in Go. Simple and predictable; reach for ffuf when you need FUZZ placement inside headers or bodies.",
+      "homepage": "https://github.com/OJ/gobuster",
+      "id": "gobuster",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/OJ/gobuster/v3",
+        "termux_package": null,
+        "version_pin": "v3.6.0"
+      },
+      "last_verified": "2026-10-23",
+      "license": "Apache-2.0",
+      "name": "Gobuster",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "gobuster",
+      "size_mb_estimate": 15,
+      "source": "https://github.com/OJ/gobuster",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "nxc"
+      ],
+      "categories": [
+        "ad",
+        "post-exploitation",
+        "offensive"
+      ],
+      "description": "Network service exploitation and Active Directory assessment tool (SMB, WinRM, LDAP, MSSQL, and more), the maintained community successor to CrackMapExec, which was archived in 2023.",
+      "homepage": "https://www.netexec.wiki",
+      "id": "netexec",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "netexec",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "BSD-2-Clause",
+      "name": "NetExec",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "nxc",
+      "size_mb_estimate": 120,
+      "source": "https://github.com/Pennyw0rth/NetExec",
+      "status": "maintained",
+      "successor_to": "crackmapexec",
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "osint"
+      ],
+      "description": "OSINT gathering tool that collects emails, subdomains, hosts, and employee names from public sources for a target domain.",
+      "homepage": "https://github.com/laramies/theHarvester",
+      "id": "theharvester",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "theHarvester",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "theHarvester",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "theHarvester",
+      "size_mb_estimate": 50,
+      "source": "https://github.com/laramies/theHarvester",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "resources",
+        "wordlists"
+      ],
+      "description": "The curated collection of lists used in security assessments: usernames, passwords, URLs, fuzzing payloads, and web shells, maintained by Daniel Miessler, Jason Haddix, and g0tmi1k. A resource, not a program. The full clone is large; on Termux consider fetching only the lists you need.",
+      "homepage": "https://github.com/danielmiessler/SecLists",
+      "id": "seclists",
+      "install": {
+        "backend": "git",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "https://github.com/danielmiessler/SecLists.git",
+        "termux_package": null,
+        "version_pin": "2024.3"
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "SecLists",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "",
+      "size_mb_estimate": 1500,
+      "source": "https://github.com/danielmiessler/SecLists",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 2
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "fuzzing"
+      ],
+      "description": "Fast recursive content discovery tool written in Rust, with automatic recursion and wildcard filtering. Distributed as a prebuilt binary from the project releases page, so DarkFly lists it as a manual install in Phase 1.",
+      "homepage": "https://github.com/epi052/feroxbuster",
+      "id": "feroxbuster",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "feroxbuster",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Feroxbuster",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "feroxbuster",
+      "size_mb_estimate": 10,
+      "source": "https://github.com/epi052/feroxbuster",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "scanning"
+      ],
+      "description": "Blazing fast port discovery in Rust that hands open ports straight to Nmap for service detection. Manual install: upstream ships packages and binaries, but there is no maintained Termux route in Phase 1, so it is Linux only here.",
+      "homepage": "https://github.com/RustScan/RustScan",
+      "id": "rustscan",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "rustscan",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "RustScan",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": false
+      },
+      "run": "rustscan",
+      "size_mb_estimate": 15,
+      "source": "https://github.com/RustScan/RustScan",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "exploitdb"
+      ],
+      "categories": [
+        "exploitation",
+        "resources"
+      ],
+      "description": "Offline search over the Exploit Database archive of exploits and proof-of-concept code, part of the exploitdb package. Manual install in Phase 1: install the exploitdb package from your distribution, or clone the GitLab repository.",
+      "homepage": "https://www.exploit-db.com",
+      "id": "searchsploit",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "exploitdb",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "searchsploit (Exploit-DB)",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "searchsploit",
+      "size_mb_estimate": 300,
+      "source": "https://gitlab.com/exploit-database/exploitdb",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    }
+  ]
+}

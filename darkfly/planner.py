@@ -1,0 +1,395 @@
+"""Install planning: turn a catalog entry into an executable plan.
+
+A plan is data before it is execution (see ``docs/DESIGN.md``). The
+planner decides, for a given environment, exactly which argv steps an
+install or uninstall would run, collects the warnings a user should see
+before confirming, and renders the whole thing as text for
+``--dry-run``. Nothing in this module executes anything.
+
+Steps are always argv lists. They are executed elsewhere with
+``shell=False``; shell strings are never built for execution.
+"""
+
+from __future__ import annotations
+
+import os
+import shlex
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional
+
+from darkfly.catalog import ToolEntry
+from darkfly.manifest import darkfly_home
+
+
+# Installs estimated above this size get an explicit heavy warning:
+# on a phone, multi-GB installs are a leading failure mode.
+HEAVY_INSTALL_MB = 500
+
+LAWFUL_USE_NOTICE = (
+    "Lawful use: this tool is in the 'offensive' category. Only use it "
+    "on systems you own or are explicitly authorised to test."
+)
+
+GIT_BACKEND_WARNING = (
+    "Git backend: this tool is installed from a source clone, not a "
+    "signed package. Review the upstream repository before running it."
+)
+
+GIT_UNPINNED_WARNING = (
+    "This git install is not pinned to a version or commit, so what you "
+    "get can change between installs."
+)
+
+GO_UNPINNED_WARNING = (
+    "This Go install is not pinned to a version (uses @latest), so "
+    "what you get can change between installs."
+)
+
+
+class PlanError(Exception):
+    """Raised when no plan can be built for a tool in this environment."""
+
+
+def detect_env(environ: Optional[Mapping[str, str]] = None) -> str:
+    """Detect a coarse runtime environment.
+
+    Returns one of:
+    - "termux" - running under Termux on Android.
+    - "linux" - Linux (non-Termux).
+    - "other" - anything else.
+
+    ``environ`` defaults to ``os.environ``; tests pass an explicit
+    mapping to simulate Termux deterministically.
+    """
+
+    env = os.environ if environ is None else environ
+
+    # Termux commonly exposes this variable
+    if env.get("TERMUX_VERSION"):
+        return "termux"
+
+    home = env.get("HOME", str(Path.home()))
+    if "com.termux" in home:
+        return "termux"
+
+    if sys.platform.startswith("linux"):
+        return "linux"
+
+    return "other"
+
+
+@dataclass
+class PlanStep:
+    description: str
+    argv: List[str]
+
+
+@dataclass
+class InstallPlan:
+    tool_id: str
+    name: str
+    backend: str
+    env: str
+    steps: List[PlanStep] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    notes: List[str] = field(default_factory=list)
+    size_mb_estimate: Optional[float] = None
+    files_created: List[str] = field(default_factory=list)
+    package: str = ""
+    version_pin: Optional[str] = None
+    run: str = ""
+    action: str = "install"  # or "uninstall"
+
+    def render(self) -> str:
+        """Render the plan as text for --dry-run and confirmations."""
+
+        lines: List[str] = []
+        lines.append(f"Plan to {self.action} {self.name} [{self.tool_id}]")
+        lines.append(f"  Backend:     {self.backend}")
+        lines.append(f"  Environment: {self.env}")
+        if self.size_mb_estimate is not None:
+            lines.append(
+                f"  Size estimate: {self.size_mb_estimate:g} MB"
+            )
+        if self.version_pin:
+            lines.append(f"  Version pin: {self.version_pin}")
+        if self.files_created:
+            if self.action == "uninstall":
+                lines.append("  Files/dirs to be removed:")
+            else:
+                lines.append("  Files/dirs to be created:")
+            for path in self.files_created:
+                lines.append(f"    {path}")
+        if self.warnings:
+            lines.append("  Warnings:")
+            for warning in self.warnings:
+                lines.append(f"    ! {warning}")
+        if self.steps:
+            lines.append("  Steps:")
+            for idx, step in enumerate(self.steps, start=1):
+                lines.append(f"    {idx}. {step.description}")
+                lines.append(f"       $ {shlex.join(step.argv)}")
+        else:
+            lines.append("  Steps: none (nothing to execute)")
+        for note in self.notes:
+            lines.append(f"  Note: {note}")
+        return "\n".join(lines)
+
+
+def _check_platform(tool: ToolEntry, env: str) -> None:
+    """Refuse, at plan time, tools that cannot be installed here."""
+
+    if env == "other":
+        raise PlanError(
+            f"{tool.name} cannot be installed here: unsupported "
+            "environment (DarkFly targets Termux and Linux)."
+        )
+    if env == "termux" and not tool.platforms.termux:
+        raise PlanError(
+            f"{tool.name} is not available on Termux. See {tool.homepage} "
+            "for desktop installation options."
+        )
+    if env == "linux" and not tool.platforms.linux:
+        raise PlanError(
+            f"{tool.name} is not available on Linux. See {tool.homepage} "
+            "for other platforms."
+        )
+    if tool.platforms.gui_required:
+        raise PlanError(
+            f"{tool.name} needs a graphical desktop, so DarkFly will "
+            "not install it on this device. It is listed for information "
+            f"only; see {tool.homepage}."
+        )
+
+
+def _dependency_steps(tool: ToolEntry, env: str) -> List[PlanStep]:
+    """Steps that install a tool's extra dependencies first."""
+
+    steps: List[PlanStep] = []
+    if env == "termux":
+        for dep in tool.install.deps_pkg:
+            steps.append(PlanStep(
+                description=f"Install dependency {dep} (Termux pkg)",
+                argv=["pkg", "install", "-y", dep],
+            ))
+    elif env == "linux":
+        for dep in tool.install.deps_apt:
+            steps.append(PlanStep(
+                description=f"Install dependency {dep} (apt)",
+                argv=["sudo", "apt-get", "install", "-y", dep],
+            ))
+    return steps
+
+
+def build_install_plan(tool: ToolEntry, env: str,
+                       base_dir: Optional[Path] = None) -> InstallPlan:
+    """Build the install plan for a catalog tool in an environment.
+
+    Raises PlanError when the tool cannot be installed here. A manual
+    backend is not an error: the plan simply has no steps and carries
+    notes explaining the manual route.
+    """
+
+    _check_platform(tool, env)
+
+    base = base_dir if base_dir is not None else darkfly_home()
+    spec = tool.install
+
+    plan = InstallPlan(
+        tool_id=tool.id,
+        name=tool.name,
+        backend=spec.backend,
+        env=env,
+        size_mb_estimate=tool.size_mb_estimate,
+        version_pin=spec.version_pin,
+        run=tool.run,
+        action="install",
+    )
+
+    # Warnings that apply regardless of backend.
+    if tool.size_mb_estimate is not None \
+            and tool.size_mb_estimate > HEAVY_INSTALL_MB:
+        plan.warnings.append(
+            f"Heavy install: about {tool.size_mb_estimate:g} MB. On "
+            "Termux, make sure you have the free space and expect the "
+            "install to take a while; if it is interrupted, re-run the "
+            "same command to resume."
+        )
+    if tool.status == "archived":
+        successor = f" Its successor is {tool.successor_to}." \
+            if tool.successor_to else ""
+        plan.warnings.append(
+            f"This tool is archived upstream and no longer "
+            f"maintained.{successor}"
+        )
+    elif tool.status == "stale":
+        plan.warnings.append(
+            "This tool is marked stale: upstream activity has slowed "
+            "and the entry may be out of date."
+        )
+    if "offensive" in tool.categories:
+        plan.warnings.append(LAWFUL_USE_NOTICE)
+
+    if spec.backend == "apt":
+        package = spec.termux_package or spec.package \
+            if env == "termux" else spec.package
+        plan.package = package
+        plan.steps.extend(_dependency_steps(tool, env))
+        if env == "termux":
+            plan.steps.append(PlanStep(
+                description=f"Install {package} (Termux pkg)",
+                argv=["pkg", "install", "-y", package],
+            ))
+        else:
+            plan.steps.append(PlanStep(
+                description=f"Install {package} (apt)",
+                argv=["sudo", "apt-get", "install", "-y", package],
+            ))
+
+    elif spec.backend == "pipx":
+        plan.package = spec.package
+        plan.steps.extend(_dependency_steps(tool, env))
+        package_spec = spec.package
+        if spec.version_pin and "://" not in spec.package \
+                and not spec.package.startswith("git+"):
+            package_spec = f"{spec.package}=={spec.version_pin}"
+        plan.steps.append(PlanStep(
+            description=f"Install {spec.package} in an isolated "
+                        "pipx environment",
+            argv=["pipx", "install", package_spec],
+        ))
+
+    elif spec.backend == "go":
+        plan.package = spec.package
+        plan.steps.extend(_dependency_steps(tool, env))
+        pin = spec.version_pin or "latest"
+        if spec.version_pin is None:
+            plan.warnings.append(GO_UNPINNED_WARNING)
+        plan.steps.append(PlanStep(
+            description=f"Build and install {spec.package} with Go",
+            argv=["go", "install", f"{spec.package}@{pin}"],
+        ))
+        plan.notes.append(
+            "The binary lands in ~/go/bin; make sure that directory is "
+            "on your PATH."
+        )
+
+    elif spec.backend == "git":
+        plan.package = spec.package
+        plan.warnings.append(GIT_BACKEND_WARNING)
+        dest = base / "tools" / tool.id
+        plan.files_created.append(str(dest))
+        if spec.version_pin:
+            plan.steps.append(PlanStep(
+                description=f"Clone {spec.package} into {dest}",
+                argv=["git", "clone", spec.package, str(dest)],
+            ))
+            plan.steps.append(PlanStep(
+                description=f"Check out pinned ref {spec.version_pin}",
+                argv=["git", "-C", str(dest), "checkout",
+                      spec.version_pin],
+            ))
+        else:
+            plan.warnings.append(GIT_UNPINNED_WARNING)
+            plan.steps.append(PlanStep(
+                description=f"Shallow-clone {spec.package} into {dest}",
+                argv=["git", "clone", "--depth", "1", spec.package,
+                      str(dest)],
+            ))
+
+    elif spec.backend == "manual":
+        plan.package = spec.package
+        plan.notes.append(
+            "Manual installation required: DarkFly does not automate "
+            f"this tool yet. Get it from {tool.homepage} and follow the "
+            "upstream instructions."
+        )
+
+    else:  # pragma: no cover - validation prevents unknown backends
+        raise PlanError(f"Unknown backend: {spec.backend!r}")
+
+    if tool.run:
+        plan.notes.append(f"After install, run it with: {tool.run}")
+    return plan
+
+
+def build_uninstall_plan(entry: Dict[str, Any], env: str) -> InstallPlan:
+    """Build the reverse plan for a manifest entry.
+
+    The steps undo what the install plan did, per backend. Removing the
+    files DarkFly created (git clone directories) is handled by the
+    installer, guided by ``files_created`` here.
+    """
+
+    if env == "other":
+        raise PlanError(
+            "Uninstall is only supported on Termux and Linux."
+        )
+
+    tool_id = entry["id"]
+    backend = entry["backend"]
+    package = entry.get("package", "")
+    run = entry.get("run", "")
+
+    plan = InstallPlan(
+        tool_id=tool_id,
+        name=entry.get("name", tool_id),
+        backend=backend,
+        env=env,
+        package=package,
+        version_pin=entry.get("version_pin"),
+        run=run,
+        action="uninstall",
+        # For an uninstall plan, files_created lists the paths the
+        # install created and the uninstall will remove.
+        files_created=list(entry.get("files_or_dirs", [])),
+    )
+    if plan.files_created:
+        plan.notes.append(
+            "The directories above were created by DarkFly and will "
+            "be removed."
+        )
+
+    if backend == "apt":
+        if env == "termux":
+            plan.steps.append(PlanStep(
+                description=f"Remove {package} (Termux pkg)",
+                argv=["pkg", "uninstall", "-y", package],
+            ))
+        else:
+            plan.steps.append(PlanStep(
+                description=f"Remove {package} (apt)",
+                argv=["sudo", "apt-get", "remove", "-y", package],
+            ))
+    elif backend == "pipx":
+        pipx_name = package.split("==")[0].rstrip("/").split("/")[-1]
+        plan.steps.append(PlanStep(
+            description=f"Remove the pipx environment for {pipx_name}",
+            argv=["pipx", "uninstall", pipx_name],
+        ))
+    elif backend == "go":
+        if run:
+            binary = Path.home() / "go" / "bin" / run
+            plan.steps.append(PlanStep(
+                description=f"Remove the Go-built binary {binary}",
+                argv=["rm", "-f", str(binary)],
+            ))
+        else:
+            plan.notes.append(
+                "No run command recorded, so there is no binary to "
+                "remove."
+            )
+    elif backend == "git":
+        plan.notes.append(
+            "The clone directory recorded in the manifest will be "
+            "deleted; there are no package steps to reverse."
+        )
+    elif backend == "manual":
+        plan.notes.append(
+            "This tool was installed manually, so DarkFly has nothing "
+            "to undo beyond removing its manifest entry."
+        )
+
+    return plan
