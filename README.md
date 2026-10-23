@@ -168,6 +168,24 @@ DarkFly5 verify                   # check installed tools: manifest, run command
 DarkFly5 doctor                   # environment, tools on PATH, catalog validation
 ```
 
+### Testing and simulation
+
+The engine is tested without touching a real system: no test installs a real tool, and no test uses the network. The suite (210 tests) runs with:
+
+```bash
+python -m pip install -e .[dev]
+pytest
+```
+
+How the simulation works:
+
+- **Simulated environments.** Environment detection is injectable, so tests plan installs for a simulated Termux and a simulated Linux side by side. That is how we know a Termux plan says `pkg install` and a Linux plan says `apt-get install`, without needing a phone.
+- **Every catalog entry is planned, on both environments.** Each of the 62 entries must produce either a valid plan with well-formed steps, or a clean platform error (for example a Linux-only tool refusing to plan on Termux). A catalog edit that breaks a plan breaks the build.
+- **Fake runner, fake downloader.** Installs execute through a runner interface and downloads through a single downloader function. Tests substitute fakes, so the journal, the resume-after-interruption logic, manifest writes, uninstall reversal, and the binary backend's SHA-256 check (including the mismatch case, which must install nothing) are all exercised end to end with zero side effects.
+- **Try a simulation yourself.** `--dry-run` is the same plan the tests assert on, shown to you: `DarkFly5 install metasploit-framework --dry-run` prints the size estimate, the heavy-install and lawful-use warnings, and every step it would take, then changes nothing. `DarkFly5 doctor` validates the catalog and reports your environment the same way the test suite sees it.
+
+CI runs the suite on Python 3.10 and 3.12 for every push and pull request.
+
 ---
 
 ## DarkFly v5 – modern Python 3 CLI (Linux / Termux)
