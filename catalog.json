@@ -669,6 +669,1418 @@
       "status": "maintained",
       "successor_to": null,
       "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "traffic-analysis",
+        "forensics"
+      ],
+      "description": "Command-line network protocol analyser from the Wireshark project: capture and dissect traffic in the terminal. Use when you need packet-level detail without a desktop; its GUI sibling is the separate Wireshark entry.",
+      "homepage": "https://www.wireshark.org",
+      "id": "tshark",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "tshark",
+        "termux_package": "tshark",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "TShark",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "tshark",
+      "size_mb_estimate": 60,
+      "source": "https://gitlab.com/wireshark/wireshark",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [
+        "nc",
+        "netcat"
+      ],
+      "categories": [
+        "utilities",
+        "network"
+      ],
+      "description": "The OpenBSD netcat: read and write raw TCP and UDP connections, listen on ports, and pipe data between hosts. Use for quick banner grabs, manual protocol checks, and simple relays.",
+      "homepage": "https://salsa.debian.org/debian/netcat-openbsd",
+      "id": "netcat-openbsd",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "netcat-openbsd",
+        "termux_package": "netcat",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "BSD-3-Clause",
+      "name": "Netcat (OpenBSD)",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "nc",
+      "size_mb_estimate": 1,
+      "source": "https://salsa.debian.org/debian/netcat-openbsd",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "passwords",
+        "offensive"
+      ],
+      "description": "GPU-accelerated password hash cracker with hundreds of hash modes. On Termux there is no useful GPU path, so phone runs are CPU-only and slow: use a laptop with a GPU for real work, and John for quick CPU jobs.",
+      "homepage": "https://hashcat.net/hashcat/",
+      "id": "hashcat",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "hashcat",
+        "termux_package": "hashcat",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Hashcat",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "hashcat",
+      "size_mb_estimate": 80,
+      "source": "https://github.com/hashcat/hashcat",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "ad",
+        "post-exploitation",
+        "offensive"
+      ],
+      "description": "Python library and script collection for Windows network protocols: secretsdump, psexec, Kerberos tooling, and SMB utilities. Use across Active Directory assessments; installing it exposes the individual scripts.",
+      "homepage": "https://github.com/fortra/impacket",
+      "id": "impacket",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "impacket",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "Apache-1.1",
+      "name": "Impacket",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "secretsdump.py",
+      "size_mb_estimate": 30,
+      "source": "https://github.com/fortra/impacket",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "ad",
+        "post-exploitation",
+        "offensive"
+      ],
+      "description": "LLMNR, NBT-NS, and MDNS poisoner for Windows networks: answers name-resolution broadcasts and captures authentication hashes. Needs root and a real lab network, so this entry is Linux-only; DarkFly clones the source, and dependencies and setup stay manual.",
+      "homepage": "https://github.com/lgandx/Responder",
+      "id": "responder",
+      "install": {
+        "backend": "git",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "https://github.com/lgandx/Responder.git",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "Responder",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": false
+      },
+      "run": "python3 Responder.py",
+      "size_mb_estimate": 5,
+      "source": "https://github.com/lgandx/Responder",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [
+        "msfconsole",
+        "metasploit"
+      ],
+      "categories": [
+        "exploitation",
+        "offensive"
+      ],
+      "description": "The Metasploit Framework: exploit development and execution platform. Laptop-class and heavy, with a long install, so DarkFly does not automate it: install on a workstation from the official packages, and avoid the unofficial Termux install scripts, which fetch and run remote code.",
+      "homepage": "https://www.metasploit.com",
+      "id": "metasploit-framework",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "metasploit-framework",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "BSD-3-Clause",
+      "name": "Metasploit Framework",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "msfconsole",
+      "size_mb_estimate": 1500,
+      "source": "https://github.com/rapid7/metasploit-framework",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 0
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "scanning",
+        "recon"
+      ],
+      "description": "Fast port scanner from ProjectDiscovery with SYN and CONNECT modes and Nmap integration. Use for quick discovery across large target lists before a deep Nmap scan.",
+      "homepage": "https://github.com/projectdiscovery/naabu",
+      "id": "naabu",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/projectdiscovery/naabu/v2/cmd/naabu",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Naabu",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "naabu",
+      "size_mb_estimate": 20,
+      "source": "https://github.com/projectdiscovery/naabu",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "recon"
+      ],
+      "description": "Next-generation web crawler from ProjectDiscovery with standard and headless modes and automatic form filling. Use to map a web application's URLs before fuzzing or scanning.",
+      "homepage": "https://github.com/projectdiscovery/katana",
+      "id": "katana",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/projectdiscovery/katana/cmd/katana",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Katana",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "katana",
+      "size_mb_estimate": 30,
+      "source": "https://github.com/projectdiscovery/katana",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "dns",
+        "recon"
+      ],
+      "description": "Fast DNS toolkit from ProjectDiscovery: resolves, filters, and probes hostnames and records from lists on stdin. Use to clean and enrich subdomain lists inside a recon pipeline.",
+      "homepage": "https://github.com/projectdiscovery/dnsx",
+      "id": "dnsx",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/projectdiscovery/dnsx/cmd/dnsx",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "dnsx",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "dnsx",
+      "size_mb_estimate": 15,
+      "source": "https://github.com/projectdiscovery/dnsx",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "dns"
+      ],
+      "description": "OWASP Amass: attack-surface mapping through DNS enumeration, external data sources, and infrastructure graphing. Use when a target's full external footprint matters more than speed.",
+      "homepage": "https://github.com/owasp-amass/amass",
+      "id": "amass",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/owasp-amass/amass/v4/cmd/amass",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "Apache-2.0",
+      "name": "Amass",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "amass",
+      "size_mb_estimate": 70,
+      "source": "https://github.com/owasp-amass/amass",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "vuln-scanning"
+      ],
+      "description": "Focused XSS scanner and parameter analyser with reflected, stored, and DOM checking modes. Use after crawling or fuzzing has surfaced parameters worth testing.",
+      "homepage": "https://github.com/hahwul/dalfox",
+      "id": "dalfox",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/hahwul/dalfox/v2",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "DalFox",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "dalfox",
+      "size_mb_estimate": 20,
+      "source": "https://github.com/hahwul/dalfox",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "pivoting",
+        "post-exploitation"
+      ],
+      "description": "Fast TCP and UDP tunnel over HTTP, with client and server in one binary. Use to pivot into an internal network segment during post-exploitation.",
+      "homepage": "https://github.com/jpillora/chisel",
+      "id": "chisel",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/jpillora/chisel",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Chisel",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "chisel",
+      "size_mb_estimate": 12,
+      "source": "https://github.com/jpillora/chisel",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "ad",
+        "passwords",
+        "offensive"
+      ],
+      "description": "Kerberos pre-authentication brute-forcing and user enumeration against a domain controller, by ropnop. Use to validate AD password policy and wordlists quickly, with a small footprint.",
+      "homepage": "https://github.com/ropnop/kerbrute",
+      "id": "kerbrute",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/ropnop/kerbrute",
+        "termux_package": null,
+        "version_pin": "v1.0.3"
+      },
+      "last_verified": "2026-10-23",
+      "license": "Apache-2.0",
+      "name": "Kerbrute",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "kerbrute",
+      "size_mb_estimate": 10,
+      "source": "https://github.com/ropnop/kerbrute",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "bloodhound"
+      ],
+      "categories": [
+        "ad",
+        "recon"
+      ],
+      "description": "Python ingestor for BloodHound: collects AD users, computers, groups, and sessions over LDAP and SMB. Collector only; the BloodHound server and graph UI run on a laptop.",
+      "homepage": "https://github.com/dirkjanm/BloodHound.py",
+      "id": "bloodhound-python",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "bloodhound",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "BloodHound.py",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "bloodhound-python",
+      "size_mb_estimate": 25,
+      "source": "https://github.com/dirkjanm/BloodHound.py",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "certipy-ad"
+      ],
+      "categories": [
+        "ad",
+        "offensive"
+      ],
+      "description": "Offensive toolkit for Active Directory Certificate Services: enumerate templates, request certificates, and abuse misconfigurations. Use on AD CS assessments.",
+      "homepage": "https://github.com/ly4k/Certipy",
+      "id": "certipy",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "certipy-ad",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Certipy",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "certipy",
+      "size_mb_estimate": 40,
+      "source": "https://github.com/ly4k/Certipy",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "ad",
+        "post-exploitation"
+      ],
+      "description": "Python WinRM shell for Windows hosts: interactive sessions, file transfer, and service execution once you hold credentials. Use for post-exploitation access on ports 5985 and 5986.",
+      "homepage": "https://github.com/ardalann/evil-winrm-py",
+      "id": "evil-winrm-py",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "evil-winrm-py",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "evil-winrm-py",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "evil-winrm-py",
+      "size_mb_estimate": 20,
+      "source": "https://github.com/ardalann/evil-winrm-py",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "vuln-scanning",
+        "offensive"
+      ],
+      "description": "Advanced XSS detection suite with crawlers, fuzzers, and WAF detection. Installed as a source clone, so review upstream and install its Python requirements yourself before running it.",
+      "homepage": "https://github.com/s0md3v/XSStrike",
+      "id": "xsstrike",
+      "install": {
+        "backend": "git",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "https://github.com/s0md3v/XSStrike.git",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "XSStrike",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "xsstrike.py",
+      "size_mb_estimate": 10,
+      "source": "https://github.com/s0md3v/XSStrike",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "ad",
+        "recon"
+      ],
+      "description": "Modern rewrite of enum4linux for enumerating Windows and Samba hosts: users, shares, groups, and policy over SMB and LDAP. Needs smbclient on the system path; DarkFly clones the source, and setup stays manual.",
+      "homepage": "https://github.com/cddmp/enum4linux-ng",
+      "id": "enum4linux-ng",
+      "install": {
+        "backend": "git",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "https://github.com/cddmp/enum4linux-ng.git",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "enum4linux-ng",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "enum4linux-ng.py",
+      "size_mb_estimate": 5,
+      "source": "https://github.com/cddmp/enum4linux-ng",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "vuln-scanning"
+      ],
+      "description": "WordPress vulnerability scanner maintained by the WPScan team. Distributed as a Ruby gem, so DarkFly does not automate it: install with the gem route (gem install wpscan) or from your distro, then run it with your own API token.",
+      "homepage": "https://wpscan.com",
+      "id": "wpscan",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "wpscan",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "LicenseRef-WPScan-Public-License",
+      "name": "WPScan",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "wpscan",
+      "size_mb_estimate": 120,
+      "source": "https://github.com/wpscanteam/wpscan",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "secrets"
+      ],
+      "description": "Secrets scanner that searches git history, filesystems, and cloud storage for leaked credentials, and verifies many key types against their services. Use to audit your own repositories and pipelines.",
+      "homepage": "https://github.com/trufflesecurity/trufflehog",
+      "id": "trufflehog",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/trufflesecurity/trufflehog/v3",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "AGPL-3.0-only",
+      "name": "TruffleHog",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "trufflehog",
+      "size_mb_estimate": 45,
+      "source": "https://github.com/trufflesecurity/trufflehog",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "pivoting",
+        "post-exploitation"
+      ],
+      "description": "Tunnelling and pivoting tool that exposes a remote network through a TUN interface, with a proxy on your machine and a small agent on the target. Upstream ships release binaries per architecture; DarkFly lists it as manual until a release checksum is maintainer-verified for the binary backend, so download from the project page and check the published sums.",
+      "homepage": "https://github.com/nicocha30/ligolo-ng",
+      "id": "ligolo-ng",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "ligolo-ng",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "Ligolo-ng",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "proxy",
+      "size_mb_estimate": 15,
+      "source": "https://github.com/nicocha30/ligolo-ng",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "zaproxy"
+      ],
+      "categories": [
+        "web",
+        "proxy"
+      ],
+      "description": "OWASP Zed Attack Proxy: intercepting proxy and web scanner for desktop use. Desktop companion only: install it on a laptop from the project site; DarkFly will not install GUI tools on this device.",
+      "homepage": "https://www.zaproxy.org",
+      "id": "zap",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "zap",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "Apache-2.0",
+      "name": "OWASP ZAP",
+      "platforms": {
+        "gui_required": true,
+        "linux": true,
+        "termux": false
+      },
+      "run": "zap",
+      "size_mb_estimate": 700,
+      "source": "https://github.com/zaproxy/zaproxy",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "burp"
+      ],
+      "categories": [
+        "web",
+        "proxy"
+      ],
+      "description": "PortSwigger's intercepting proxy and web security toolkit, the desktop reference for manual web testing. Desktop companion only: download the Community edition from PortSwigger onto a laptop; DarkFly will not install GUI tools on this device.",
+      "homepage": "https://portswigger.net/burp",
+      "id": "burpsuite",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "burpsuite",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "LicenseRef-Proprietary",
+      "name": "Burp Suite Community",
+      "platforms": {
+        "gui_required": true,
+        "linux": true,
+        "termux": false
+      },
+      "run": "burpsuite",
+      "size_mb_estimate": 900,
+      "source": "https://portswigger.net/burp",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "traffic-analysis",
+        "forensics"
+      ],
+      "description": "Wireshark graphical packet analyser. Desktop companion only: use this entry's CLI sibling, tshark, on Termux and headless Linux, and run the full GUI on a laptop.",
+      "homepage": "https://www.wireshark.org",
+      "id": "wireshark",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "wireshark",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "Wireshark",
+      "platforms": {
+        "gui_required": true,
+        "linux": true,
+        "termux": false
+      },
+      "run": "wireshark",
+      "size_mb_estimate": 350,
+      "source": "https://gitlab.com/wireshark/wireshark",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "recon",
+        "dns"
+      ],
+      "description": "Finds subdomains for a domain from passive online sources, by Tom Hudson (tomnomnom). Use as a fast first pass before heavier enumeration with Amass or Subfinder.",
+      "homepage": "https://github.com/tomnomnom/assetfinder",
+      "id": "assetfinder",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/tomnomnom/assetfinder",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "AssetFinder",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "assetfinder",
+      "size_mb_estimate": 8,
+      "source": "https://github.com/tomnomnom/assetfinder",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "getallurls"
+      ],
+      "categories": [
+        "recon",
+        "web"
+      ],
+      "description": "Fetches known URLs for a domain from AlienVault OTX, the Wayback Machine, Common Crawl, and URLScan. Use to seed crawling and fuzzing with historical endpoints.",
+      "homepage": "https://github.com/lc/gau",
+      "id": "gau",
+      "install": {
+        "backend": "go",
+        "deps_apt": [
+          "golang-go"
+        ],
+        "deps_pkg": [
+          "golang"
+        ],
+        "package": "github.com/lc/gau/v2/cmd/gau",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "gau (getallurls)",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "gau",
+      "size_mb_estimate": 12,
+      "source": "https://github.com/lc/gau",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "recon"
+      ],
+      "description": "Identifies the web application firewall in front of a site by sending probe requests and matching responses. Use early in a web engagement so later scans are calibrated.",
+      "homepage": "https://github.com/EnableSecurity/wafw00f",
+      "id": "wafw00f",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "wafw00f",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "BSD-3-Clause",
+      "name": "WAFW00F",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "wafw00f",
+      "size_mb_estimate": 12,
+      "source": "https://github.com/EnableSecurity/wafw00f",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "exploitation",
+        "offensive"
+      ],
+      "description": "Automated detection and exploitation of command injection vulnerabilities. Use against parameters you are authorised to test when a shell command sink is suspected.",
+      "homepage": "https://commixproject.com",
+      "id": "commix",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "commix",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "Commix",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "commix",
+      "size_mb_estimate": 8,
+      "source": "https://pypi.org/project/commix/",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "recon"
+      ],
+      "description": "Finds hidden HTTP parameters by comparing responses across wordlist-driven requests. Use on endpoints where undocumented parameters may unlock debug or admin behaviour.",
+      "homepage": "https://github.com/s0md3v/Arjun",
+      "id": "arjun",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "arjun",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "Arjun",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "arjun",
+      "size_mb_estimate": 8,
+      "source": "https://github.com/s0md3v/Arjun",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "proxy",
+        "web"
+      ],
+      "description": "Interactive intercepting proxy suite: a console UI (mitmproxy), a web UI (mitmweb), and a scriptable dump mode (mitmdump). Use when you want scriptable interception that also runs on Termux and headless servers.",
+      "homepage": "https://mitmproxy.org",
+      "id": "mitmproxy",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "mitmproxy",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "mitmproxy",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "mitmproxy",
+      "size_mb_estimate": 90,
+      "source": "https://github.com/mitmproxy/mitmproxy",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "osint",
+        "recon"
+      ],
+      "description": "Hunts for a username across hundreds of social networks and sites. Use for OSINT footprinting of your own handles, or an authorised investigation.",
+      "homepage": "https://github.com/sherlock-project/sherlock",
+      "id": "sherlock",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "sherlock-project",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "Sherlock",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "sherlock",
+      "size_mb_estimate": 25,
+      "source": "https://github.com/sherlock-project/sherlock",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "hash-id"
+      ],
+      "categories": [
+        "passwords"
+      ],
+      "description": "Identifies the algorithm of an unknown hash string, with hashcat and John mode references. Use as the first step before choosing a cracker run.",
+      "homepage": "https://github.com/psypanda/hashID",
+      "id": "hashid",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "hashid",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "hashID",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "hashid",
+      "size_mb_estimate": 4,
+      "source": "https://github.com/psypanda/hashID",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "forensics",
+        "recon"
+      ],
+      "description": "Reads and writes metadata in images, documents, audio, and video. Use to audit what a file leaks (GPS, device, author) before sharing it, or during forensic triage.",
+      "homepage": "https://exiftool.org",
+      "id": "exiftool",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "libimage-exiftool-perl",
+        "termux_package": "exiftool",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "Artistic-1.0-Perl",
+      "name": "ExifTool",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "exiftool",
+      "size_mb_estimate": 25,
+      "source": "https://github.com/exiftool/exiftool",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "reversing",
+        "forensics"
+      ],
+      "description": "Portable reverse-engineering framework: disassembler, debugger, and binary analysis toolkit driven from the terminal. Use for malware triage and crackme-style work without a desktop IDE.",
+      "homepage": "https://rada.re",
+      "id": "radare2",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "radare2",
+        "termux_package": "radare2",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "LGPL-3.0-only",
+      "name": "Radare2",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "radare2",
+      "size_mb_estimate": 55,
+      "source": "https://github.com/radareorg/radare2",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "utilities",
+        "pivoting"
+      ],
+      "description": "Multipurpose relay for bidirectional byte streams: files, sockets, pipes, and terminals. Use for port forwarding, quick listeners, and gluing network tools together.",
+      "homepage": "https://repo.or.cz/socat.git",
+      "id": "socat",
+      "install": {
+        "backend": "apt",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "socat",
+        "termux_package": "socat",
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "socat",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "socat",
+      "size_mb_estimate": 2,
+      "source": "https://repo.or.cz/socat.git",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 1
+    },
+    {
+      "aliases": [
+        "patt"
+      ],
+      "categories": [
+        "resources",
+        "web"
+      ],
+      "description": "Reference collection of payloads and bypass techniques for web vulnerability classes, with per-topic notes. A reading and reference resource, not a tool; the clone is your offline copy.",
+      "homepage": "https://github.com/swisskyrepo/PayloadsAllTheThings",
+      "id": "payloadsallthethings",
+      "install": {
+        "backend": "git",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "https://github.com/swisskyrepo/PayloadsAllTheThings.git",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "MIT",
+      "name": "PayloadsAllTheThings",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "",
+      "size_mb_estimate": 250,
+      "source": "https://github.com/swisskyrepo/PayloadsAllTheThings",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 2
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "resources"
+      ],
+      "description": "Large community knowledge base of hacking techniques, privilege escalation, and protocol notes. Read it online at book.hacktricks.xyz; DarkFly does not clone it, because the repository is the book's source, not an offline reader.",
+      "homepage": "https://book.hacktricks.xyz",
+      "id": "hacktricks",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "hacktricks",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "CC-BY-NC-SA-4.0",
+      "name": "HackTricks",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "",
+      "size_mb_estimate": null,
+      "source": "https://github.com/HackTricks-wiki/hacktricks",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 2
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "resources",
+        "post-exploitation"
+      ],
+      "description": "Curated reference of Unix binaries that can be abused to bypass local security restrictions once you have a shell. It is a website, not an install: browse it online when checking a sudo or SUID binary.",
+      "homepage": "https://gtfobins.github.io",
+      "id": "gtfobins",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "gtfobins",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "GTFOBins",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "",
+      "size_mb_estimate": null,
+      "source": "https://github.com/GTFOBins/GTFOBins.github.io",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 2
+    },
+    {
+      "aliases": [
+        "rockyou.txt"
+      ],
+      "categories": [
+        "resources",
+        "passwords"
+      ],
+      "description": "The rockyou password wordlist, the standard first dictionary for offline cracking labs. Never bundled with DarkFly: download it yourself from a source you trust (the Kali wordlists package, or the copy inside SecLists), expect about 140 MB of plain text, and prefer the smaller SecLists subsets on a phone.",
+      "homepage": "https://github.com/danielmiessler/SecLists",
+      "id": "rockyou",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "rockyou",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "Unknown",
+      "name": "rockyou wordlist",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "",
+      "size_mb_estimate": 140,
+      "source": "https://github.com/danielmiessler/SecLists",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 2
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "web",
+        "proxy"
+      ],
+      "description": "Modern intercepting proxy written in Rust, positioned as a lighter, faster alternative to Burp with a clean workflow UI. Emerging and desktop-class: install it from caido.io on a laptop; listed so the catalog tracks it.",
+      "homepage": "https://caido.io",
+      "id": "caido",
+      "install": {
+        "backend": "manual",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "caido",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "LicenseRef-Proprietary",
+      "name": "Caido",
+      "platforms": {
+        "gui_required": true,
+        "linux": true,
+        "termux": false
+      },
+      "run": "caido",
+      "size_mb_estimate": 200,
+      "source": "https://caido.io",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 3
+    },
+    {
+      "aliases": [
+        "scout"
+      ],
+      "categories": [
+        "cloud",
+        "recon"
+      ],
+      "description": "Multi-cloud security auditing tool (AWS, Azure, GCP, and others) that fetches configuration data and produces an HTML findings report. Use to review your own cloud accounts.",
+      "homepage": "https://github.com/nccgroup/ScoutSuite",
+      "id": "scoutsuite",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "scoutsuite",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-2.0-only",
+      "name": "Scout Suite",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "scout",
+      "size_mb_estimate": 90,
+      "source": "https://github.com/nccgroup/ScoutSuite",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 3
+    },
+    {
+      "aliases": [],
+      "categories": [
+        "cloud",
+        "exploitation",
+        "offensive"
+      ],
+      "description": "AWS exploitation framework by Rhino Security Labs: modular post-exploitation and enumeration against an AWS environment you control or are authorised to test. Use it inside a dedicated lab account only.",
+      "homepage": "https://github.com/RhinoSecurityLabs/pacu",
+      "id": "pacu",
+      "install": {
+        "backend": "pipx",
+        "deps_apt": [],
+        "deps_pkg": [],
+        "package": "pacu",
+        "termux_package": null,
+        "version_pin": null
+      },
+      "last_verified": "2026-10-23",
+      "license": "GPL-3.0-only",
+      "name": "Pacu",
+      "platforms": {
+        "gui_required": false,
+        "linux": true,
+        "termux": true
+      },
+      "run": "pacu",
+      "size_mb_estimate": 70,
+      "source": "https://github.com/RhinoSecurityLabs/pacu",
+      "status": "maintained",
+      "successor_to": null,
+      "tier": 3
     }
   ]
 }

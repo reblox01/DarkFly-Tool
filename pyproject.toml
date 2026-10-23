@@ -36,6 +36,13 @@ DarkFly5 = "darkfly.cli:main"
 [tool.setuptools]
 package-dir = {"" = "."}
 
+# Ship the v2 catalog inside the package so installs outside a clone
+# still find it (darkfly.catalog falls back to the package directory).
+# tests/test_packaging.py keeps darkfly/catalog.json byte-identical
+# to the root catalog.json.
+[tool.setuptools.package-data]
+darkfly = ["catalog.json"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["darkfly*"]
