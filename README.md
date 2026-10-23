@@ -28,6 +28,144 @@ In its original (v4) form, DarkFly-Tool is an installation tool for installing t
 
 ---
 
+## Architecture: the next-generation engine
+
+The next-generation install engine lives on the `nextgen/phase-1` branch, alongside the classic v5 commands. The full design document is [docs/DESIGN.md](docs/DESIGN.md). This section is the short version, including the schemas.
+
+### How it fits together
+
+```
+                        +----------------------+
+   user command ------> |  darkfly/cli.py      |
+                        |  search, install,    |
+                        |  uninstall, doctor   |
+                        +----------+-----------+
+                                   |
+              +--------------------+--------------------+
+              |                    |                    |
+   +----------v---------+  +-------v--------+  +--------v---------+
+   | darkfly/catalog.py |  | darkfly/       |  | darkfly/         |
+   | loads + validates  |  | planner.py     |  | manifest.py      |
+   | catalog.json       |  | builds an      |  | installed.json:  |
+   | (schema v2)        |  | install plan   |  | what DarkFly     |
+   +----------+---------+  | for THIS       |  | installed, where,|
+              |            | environment    |  | with what backend|
+              |            +-------+--------+  +--------^---------+
+              |                    |                    |
+              |            +-------v--------------------+---------+
+              +----------> | darkfly/installer.py               |
+                           | executes the plan step by step,    |
+                           | journals progress, resumes after   |
+                           | an interruption, records results   |
+                           | in the manifest                    |
+                           +------------------+-----------------+
+                                              |
+                            +-----------------v------------------+
+                            | the system itself: pkg (Termux),   |
+                            | apt-get (Linux), pipx, go, git     |
+                            +------------------------------------+
+```
+
+Design rules that shape everything above:
+
+- The catalog is plain JSON in the repo: diff-able in pull requests, auditable by anyone. No obfuscated tool lists, no code fetched at startup.
+- Installing is two steps: build a **plan** (data), then execute it. `--dry-run` prints the plan and executes nothing.
+- Backends are chosen per tool by trust: signed `apt`/`pkg` package first, then `pipx` or `go install` at a pinned version, then a pinned `git` clone (with a visible warning), then `manual` (documented, never fake-installed).
+- Everything DarkFly installs is recorded in a manifest, so `uninstall` removes exactly what was added, and nothing else.
+- Installs are journaled: if Android kills Termux mid-install (the signal 9 problem), the next run resumes where it stopped instead of starting over.
+
+### Schema 1: the catalog (`catalog.json`, schema v2)
+
+Top level: `{ "schema_version": 2, "tools": [ ... ] }`. Each tool entry:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Stable unique identifier, also used on the CLI. |
+| `name` | string | Display name. |
+| `aliases` | list of string | Alternate names users may type (`nxc` for NetExec). |
+| `description` | string | What the tool does, with a "use when" hint where useful. |
+| `categories` | list of string | Workflow categories. `offensive` triggers a lawful-use notice at install time. |
+| `homepage`, `source` | string | Canonical homepage and source repository (HTTPS). |
+| `license` | string | SPDX-style license identifier. |
+| `status` | string | `maintained`, `stale`, or `archived`. Archived tools point at a successor instead of silently rotting. |
+| `tier` | int | 0 core, 1 modern layer, 2 resources (data, not code), 3 emerging. |
+| `platforms` | object | `termux` (bool), `linux` (bool), `gui_required` (bool). |
+| `size_mb_estimate` | number or null | Rough installed size, used for pre-flight warnings. |
+| `last_verified` | string | Date a maintainer last confirmed the entry installs as described. |
+| `install.backend` | string | One of `apt`, `pipx`, `go`, `git`, `manual`. |
+| `install.package` | string | Package name, Go module path, or repo URL, depending on backend. |
+| `install.termux_package` | string or null | Termux `pkg` name when it differs from `package`. |
+| `install.version_pin` | string or null | Version or commit to pin, where the backend supports one. |
+| `install.deps_pkg`, `install.deps_apt` | list of string | Extra packages to install first, per platform. |
+| `run` | string | Command the user runs after install. |
+| `successor_to` | string or null | The tool this one replaces, if any. |
+
+A real entry, NetExec:
+
+```json
+{
+  "id": "netexec",
+  "name": "NetExec",
+  "aliases": ["nxc"],
+  "description": "Network service exploitation and Active Directory assessment tool, the maintained successor to CrackMapExec.",
+  "categories": ["ad", "post-exploitation", "offensive"],
+  "homepage": "https://www.netexec.wiki",
+  "source": "https://github.com/Pennyw0rth/NetExec",
+  "license": "BSD-2-Clause",
+  "status": "maintained",
+  "tier": 1,
+  "platforms": {"termux": true, "linux": true, "gui_required": false},
+  "size_mb_estimate": 120,
+  "last_verified": "2026-10-23",
+  "install": {
+    "backend": "pipx",
+    "package": "netexec",
+    "termux_package": null,
+    "version_pin": null,
+    "deps_pkg": [],
+    "deps_apt": []
+  },
+  "run": "nxc",
+  "successor_to": "crackmapexec"
+}
+```
+
+The catalog is validated before use: missing or mistyped fields, duplicate ids or aliases, unknown backends or statuses, and bad dates are all rejected with a clear error. An invalid catalog is never used for installs.
+
+### Schema 2: the manifest (`installed.json`)
+
+Stored in the DarkFly home (`$DARKFLY_HOME` if set, else `~/.local/share/darkfly/`), next to the install journal and the `tools/` directory used by the git backend. One entry per installed tool:
+
+```json
+{
+  "schema_version": 1,
+  "tools": {
+    "netexec": {
+      "version_pin": null,
+      "backend": "pipx",
+      "installed_at": "2026-10-23T17:00:00+00:00",
+      "files_or_dirs": [],
+      "run": "nxc"
+    }
+  }
+}
+```
+
+The manifest is the single source of truth for `installed` and `uninstall`: if a tool is not in the manifest, DarkFly did not install it and will not claim otherwise.
+
+### Next-gen commands
+
+```bash
+DarkFly5 search nuclei            # search id, name, aliases, description, categories
+DarkFly5 install nmap --dry-run   # print the plan for THIS environment, change nothing
+DarkFly5 install netexec          # shows the plan, asks, then installs (journaled, resumable)
+DarkFly5 installed                # list what the manifest says is installed
+DarkFly5 uninstall seclists       # reverse an install using the manifest
+DarkFly5 doctor                   # environment, tools on PATH, catalog validation
+```
+
+---
+
 ## DarkFly v5 – modern Python 3 CLI (Linux / Termux)
 
 DarkFly v5 is a new, configurable CLI that does **not** depend on the old Python 2 installer. It is implemented as a normal Python package in the `darkfly/` directory.
