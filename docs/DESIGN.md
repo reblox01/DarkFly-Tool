@@ -88,6 +88,7 @@ Each tool entry:
 | `install.package` | string | Package name (apt, pipx), Go module path (go), repository URL (git), or an artifact reference (manual, binary). |
 | `install.binary` | object or absent | Binary backend only, required when `backend` is `binary`: `url` (HTTPS, may contain `{arch}` and `{version}` placeholders), `sha256` (map of architecture name to the expected 64-hex digest of the download), `archive` (one of `none`, `tar.gz`, `zip`), and `bin_name` (the file installed into `<darkfly home>/bin/`). See Section 3. |
 | `install.termux_package` | string or null | Package name under Termux `pkg` when it differs from `package`; null means "same as `package`". |
+| `install.rhel_package` | string or null | Package name under `dnf` on RHEL-family Linux when it differs from `package`; null means "same as `package`". Set only where the name is known (currently just `nmap-ncat` for netcat); every other entry leaves it null pending a real-distro verification pass. |
 | `install.version_pin` | string or null | Version or commit to pin, where the backend supports one. |
 | `install.deps_pkg` | list of string | Extra Termux packages to install first (via `pkg`). |
 | `install.deps_apt` | list of string | Extra Debian/Ubuntu packages to install first (via `apt-get`). |
@@ -144,11 +145,14 @@ byte-identical to the root file so the two can never drift.
 One backend per entry, chosen by the maintainer using this priority order
 (most trusted first):
 
-1. **apt / pkg**: a signed package from the distro or Termux repositories.
-   APT and `pkg` verify signatures themselves; DarkFly never reimplements
+1. **apt / pkg / dnf**: a signed package from the distro or Termux repositories.
+   APT, `pkg`, and `dnf` verify signatures themselves; DarkFly never reimplements
    downloads and never adds foreign repositories (the Katoolin rule: mixing
    a rolling Kali repo into a stable host leads to unresolvable dependency
-   conflicts and a broken system).
+   conflicts and a broken system). On RHEL-family Linux the planner renders
+   `sudo dnf install -y <package>`, using `install.rhel_package` when the
+   catalog sets one and `install.package` otherwise. See the RHEL subsection
+   in Section 7 for the honest limits of this support.
 2. **Vendor binary release with checksum** (`binary` backend,
    implemented in Phase 2, minimal form): for Go and Rust tools on
    Termux arm64 a prebuilt upstream binary avoids 10 to 30 minute
@@ -196,10 +200,13 @@ One backend per entry, chosen by the maintainer using this priority order
    the checksum-mismatch abort.
 3. **pipx / go install at a pin**: Python tools go through pipx so each
    tool lives in its own virtualenv and can be upgraded or removed
-   cleanly. Go tools use `go install module@pin`. This tier is also where
-   delegation to single-vendor managers belongs later (for example handing
-   ProjectDiscovery tools to `pdtm`, which already does cached catalog,
-   binary install, update, and remove well).
+   cleanly. Go tools use `go install module@pin`. Delegation to a
+   single-vendor manager is implemented as an opt-in for ProjectDiscovery
+   tools (Section 7, pdtm subsection): with `DARKFLY_PDTM=1` set and
+   `pdtm` on PATH, a ProjectDiscovery tool's install plan becomes
+   `pdtm -i <tool>` and its update plan `pdtm -u <tool>` instead of the
+   `go install` plan. Without both conditions, the default plan is
+   unchanged.
 4. **git clone at a pinned commit, with a warning**: last resort. The plan
    always carries a visible warning that a git install is not
    package-manager verified. Clones land in a dedicated directory
@@ -329,35 +336,104 @@ against the legacy `darkfly_tools.json`:
 
 | Command | Source | Behaviour |
 |---|---|---|
-| `DarkFly5 list` | legacy catalog | List tools from `darkfly_tools.json` (unchanged). |
-| `DarkFly5 info <id>` | legacy catalog | Show details and suggested commands (unchanged). |
-| `DarkFly5 menu` | legacy catalog | Numbered menu (unchanged; will be re-based on the new catalog in a later phase). |
+| `DarkFly5 list` | catalog v2 | List tools from the catalog (re-based on catalog v2 in Phase 3; `darkfly_tools.json` is retired). |
+| `DarkFly5 info <id>` | catalog v2 | Show details plus the install plan for this environment (re-based on catalog v2 in Phase 3). |
+| `DarkFly5 menu` | catalog v2 | Numbered menu over the catalog; picking a tool shows its info (re-based on catalog v2 in Phase 3). |
 | `DarkFly5 search <query>` | catalog v2 | Case-insensitive search over id, name, aliases, description, categories, and successor links. Ranked: exact id or alias first. |
 | `DarkFly5 install <id> [--dry-run] [--yes]` | catalog v2 | Build the plan, print it, confirm interactively unless `--yes`, execute with journaling, record in the manifest. Resumes an interrupted install of the same tool. |
 | `DarkFly5 uninstall <id> [--dry-run] [--yes]` | manifest | Build the reverse plan from the manifest entry, confirm, execute, remove files DarkFly created, drop the manifest entry. |
 | `DarkFly5 installed` | manifest | List what DarkFly has installed, with backend, pin, and date. |
 | `DarkFly5 update [id] [--dry-run] [--yes]` | manifest + catalog | Update one installed tool, or all of them. The plan is built from the manifest entry's recorded backend, with pins and module paths taken from the current catalog when it has newer ones. |
-| `DarkFly5 verify [id]` | manifest + catalog | Check installed tools: manifest entry present, tool still in the catalog, run command findable (on PATH, or inside the clone for git installs), recorded paths still exist. Exits non-zero when any check fails. Does not execute the tools. |
-| `DarkFly5 doctor` | environment | Print detected environment, Python version, platform, which of `pkg`, `apt-get`, `pipx`, `go`, `git` are on PATH, free disk space, the darkfly home path, and the catalog validation result. |
+| `DarkFly5 verify [id] [--versions]` | manifest + catalog | Check installed tools: manifest entry present, tool still in the catalog, run command findable (on PATH, or inside the clone for git installs), recorded paths still exist. Exits non-zero when any check fails. By default it executes nothing; `--versions` additionally runs `<run> --version` (5 second timeout) for tools found on PATH and reports the first line, with a timeout or non-zero exit reported as a problem. |
+| `DarkFly5 doctor` | environment | Print detected environment, distro family and os-release ID on Linux, Python version, platform, which of `pkg`, `apt-get`, `dnf`, `pipx`, `go`, `git` are on PATH, free disk space, the darkfly home path, and the catalog validation result. |
 
-Uninstall step shapes by backend: apt becomes `pkg uninstall -y` (Termux)
-or `sudo apt-get remove -y` (Linux); pipx becomes `pipx uninstall <name>`;
+Uninstall step shapes by backend: apt becomes `pkg uninstall -y` (Termux),
+`sudo dnf remove -y` (RHEL-family Linux), or `sudo apt-get remove -y`
+(other Linux); pipx becomes `pipx uninstall <name>`;
 go removes the built binary from `~/go/bin/<run>`; git removes the clone
 directory recorded in the manifest; binary deletes the installed file
 recorded in the manifest; manual has nothing to undo.
 
 Update step shapes by backend: apt becomes `pkg install -y <package>` on
 Termux (installing an installed package upgrades it, while `pkg upgrade`
-would upgrade the whole device) and `sudo apt-get install -y
---only-upgrade <package>` on Linux; pipx becomes `pipx upgrade <name>`;
+would upgrade the whole device), `sudo dnf upgrade -y <package>` on
+RHEL-family Linux, and `sudo apt-get install -y
+--only-upgrade <package>` on Debian-family and other Linux; pipx becomes `pipx upgrade <name>`;
 go re-runs `go install <module>@<catalog pin>`; git fetches and checks
 out the catalog pin, or pulls with `--ff-only` when unpinned; manual and
 binary report that they cannot be updated automatically.
 
 Environment detection (`darkfly.planner.detect_env`) returns `termux`
-when `TERMUX_VERSION` is set or the home path contains `com.termux`,
-`linux` on other Linux systems, and `other` elsewhere. It accepts an
-optional environ mapping so tests can simulate Termux deterministically.
+when `TERMUX_VERSION` is set or the home path contains `com.termux`;
+on other Linux systems it refines the answer by reading
+`/etc/os-release` (see `detect_distro_family`): `debian` when the ID or
+ID_LIKE tokens include debian, ubuntu, or raspbian, `rhel` when they
+include rhel, fedora, centos, almalinux, rocky, or oraclelinux, and
+`linux` for anything else (which keeps the historical apt-get
+behavior). It accepts an optional environ mapping and an optional
+os-release path so tests can simulate Termux and other distros
+deterministically, and the `DARKFLY_OS_RELEASE` variable overrides the
+os-release path. `doctor` prints the detected family and the
+os-release ID.
+
+### pdtm delegation (opt-in, Phase 3)
+
+ProjectDiscovery tools (Nuclei, Subfinder, httpx, Naabu, Katana, dnsx)
+are Go tools in the catalog, and `pdtm` already manages exactly that
+vendor's tools with a cached catalog and binary installs. Delegation
+is therefore available but never default: the planner renders a
+`pdtm -i <tool>` install plan (and `pdtm -u <tool>` update plan) only
+when `DARKFLY_PDTM=1` is set AND `pdtm` is found on PATH. Either
+condition missing means the plain `go install` plan, so a machine
+without pdtm behaves exactly as before and no user is surprised by a
+different installer appearing.
+
+Flag uncertainty, stated honestly: the research confirms pdtm's
+`-ia` (install all), `-ua` (update all), and `-l` (list) flags and
+that per-tool install/update/remove exists, but the exact per-tool
+flag spelling was not confirmed against a live pdtm run. The plans
+use `-i` and `-u` with the tool name, which is the documented
+per-tool form; if a real pdtm run shows different flags, the planner
+strings change and the tests change with them. The manifest still
+records backend `go` for a delegated install, and update delegation
+keys off the catalog entry's ProjectDiscovery source, not the
+manifest backend.
+
+### Red Hat family support (Phase 3)
+
+The planner distinguishes distro families on Linux from
+`/etc/os-release` ID and ID_LIKE (Section 4): `debian`, `rhel`, or the
+`linux` fallback. For the `apt` backend, RHEL-family plans render
+`sudo dnf install -y <package>` (install), `sudo dnf upgrade -y
+<package>` (update), and `sudo dnf remove -y <package>` (uninstall),
+using `install.rhel_package` when the catalog sets one. Only one
+RHEL package name is set today: netcat-openbsd maps to `nmap-ncat`,
+the well-known RHEL package providing nc. Every other entry leaves
+`rhel_package` null and falls back to `install.package`, which is
+correct for the many tools whose names match across distros and
+wrong for the ones that do not; a real-distro verification pass over
+RHEL package names is still owed (Phase 4).
+
+Honest caveat: RHEL support in this phase is simulated, not run. The
+build machine has no container runtime (neither podman nor docker),
+so no real RHEL, Fedora, or AlmaLinux system was available to test
+against. What was tested: fake os-release files for RHEL 9, Fedora,
+Ubuntu, and Debian driving detection and plan rendering, plus the
+full catalog planning on the `rhel` environment. A real check needs a
+dnf-based machine or container and should cover at least one apt
+tool, one pipx tool, and one go tool end to end before RHEL support
+is advertised as verified.
+
+### Upstream liveness (Phase 3)
+
+`tools/check_upstream.py` (stdlib only) reads `catalog.json` and
+issues a HEAD request per homepage and source URL (GET fallback on
+405/501), 10 second timeout, sequential, printing a per-tool report
+and a summary count, exiting non-zero when any URL fails. It runs
+weekly from `.github/workflows/upstream-check.yml` (cron plus manual
+dispatch). It is a liveness check only: it does not judge whether a
+repository is archived or stale, which still needs the catalog's
+`status` field and maintainer review.
 
 ## 8. Safety rules
 
@@ -443,13 +519,32 @@ liveness and archived-status checks in CI (CI currently validates
 schema and dry-runs plans, it does not call home to upstreams), and
 further catalog growth toward 100 with wordlist size bundles.
 
-**Phase 3.** The deferred items above. An optional richer front-end (a
-fuzzy picker, possibly a Textual UI) strictly on top of the same
-subcommands. A published, honest benchmark of install time, failure
-rate, and uninstall cleanliness for the top catalog entries on a named
-Termux device and a named Linux VM. Deeper `verify` that optionally
-executes a tool's version probe. An experimental, opt-in,
-dry-run-gated AI assistant layer only if demand appears.
+**Phase 3 (implemented on the `nextgen/phase-3` branch).** The deferred
+items above: `list`, `info`, and `menu` re-based on catalog v2 with
+`darkfly_tools.json` retired; RHEL-family support with dnf plans and
+an `install.rhel_package` schema field (simulated via fake os-release
+files; no real RHEL run was possible in the build VM, see Section 7);
+deeper `verify` with an opt-in `--versions` probe; opt-in pdtm
+delegation for ProjectDiscovery tools; the upstream liveness script
+plus its weekly workflow; and both workflow files restored on the
+branch (`.github/workflows/ci.yml` from Phase 2 and the new
+`upstream-check.yml`). Note for the owner: the GitHub App used for
+pushes cannot write files under `.github/workflows/` (403, missing
+Workflows permission), so the workflow files are committed locally
+but must reach the repo through the web UI or a permission grant,
+exactly as with Phase 2's ci.yml.
+
+**Phase 4.** An optional richer front-end (a fuzzy picker, possibly a
+Textual UI) strictly on top of the same subcommands. A published,
+honest benchmark of install time, failure rate, and uninstall
+cleanliness for the top catalog entries on a named Termux device and
+a named Linux VM. An experimental, opt-in, dry-run-gated AI assistant
+layer only if demand appears. A real-distro verification pass over
+RHEL package names (and at least one end-to-end dnf install on a real
+RHEL-family system). Confirmation of pdtm's per-tool flag spelling
+against a live pdtm run. Catalog growth toward 100 with wordlist
+size bundles. The first shipped binary-backend entry once a release
+checksum is maintainer-verified.
 
 ## 11. Open questions
 
@@ -460,8 +555,10 @@ Carried over from the research, deliberately unresolved:
   catalog must never quote benchmark numbers as fact; if DarkFly wants
   numbers, it has to measure its own (Phase 3 benchmark).
 - Delegate ProjectDiscovery tools to `pdtm`, or keep direct `go install`
-  plans? Phases 1 and 2 use `go install`; delegation is deferred to
-  Phase 3 and depends on how often `pdtm` is present on target devices.
+  plans? Resolved in Phase 3 as opt-in delegation (Section 7):
+  `DARKFLY_PDTM=1` plus `pdtm` on PATH delegates, otherwise the
+  `go install` plan stands. Open sub-question: confirm the per-tool
+  `-i`/`-u` flag spelling against a live pdtm run.
 - First shipped binary-backend entry: Ligolo-ng is the candidate, but
   it waits on a maintainer verifying a release checksum against the
   vendor's published value (see Section 3). Until then it stays
@@ -482,3 +579,7 @@ Carried over from the research, deliberately unresolved:
 - Community sources (Reddit, Null Byte) could not be verified directly in
   the research and are treated as second-hand consensus only; nothing in
   this design depends on them.
+- RHEL support is plan-level only until a real dnf-based system is
+  available for an end-to-end run (Section 7). The package-name mapping
+  beyond `nmap-ncat` is unverified and must not be advertised as
+  tested.

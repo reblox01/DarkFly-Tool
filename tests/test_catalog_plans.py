@@ -72,7 +72,7 @@ def test_catalog_gui_companions_are_never_fake_installed():
 
 @pytest.mark.parametrize("tool", CATALOG.tools,
                          ids=[t.id for t in CATALOG.tools])
-@pytest.mark.parametrize("env", ["linux", "termux"])
+@pytest.mark.parametrize("env", ["linux", "termux", "debian", "rhel"])
 def test_every_entry_plans_or_fails_as_platform_error(tool, env,
                                                       tmp_path):
     try:

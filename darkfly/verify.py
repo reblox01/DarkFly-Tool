@@ -1,17 +1,19 @@
 """Install verification: does what the manifest claims still hold?
 
-``verify`` is deliberately shallow in this phase (see
-``docs/DESIGN.md``): it checks that an installed tool is still in the
-catalog, that its run command can still be found, and that the files
-and directories DarkFly recorded still exist. It does not execute
-the tools or compare versions; that belongs to a later phase.
+``verify`` checks that an installed tool is still in the catalog, that
+its run command can still be found, and that the files and directories
+DarkFly recorded still exist. By default it executes nothing. The
+optional version probe (``verify --versions``) goes one step further
+and runs ``<run> --version`` with a short timeout, reporting the first
+line of output; that execution is opt-in only (see ``docs/DESIGN.md``).
 """
 
 from __future__ import annotations
 
 import shutil
+import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from darkfly import manifest as manifest_mod
 from darkfly.catalog import Catalog
@@ -62,6 +64,46 @@ def verify_entry(entry: Dict[str, Any],
         )
 
     return problems
+
+
+def version_probe(entry: Dict[str, Any],
+                  timeout: float = 5.0) -> Tuple[Optional[str],
+                                                 Optional[str]]:
+    """Probe an installed tool's version (opt-in only).
+
+    Returns ``(version_line, problem)``: exactly one is None. When the
+    run command is not on PATH there is nothing to probe, so both are
+    None. A timeout or a non-zero exit is reported as a problem, never
+    raised: a broken tool is a verification result, not a crash.
+    """
+
+    run = (entry.get("run") or "").strip()
+    if not run:
+        return None, None
+    command = run.split()[0]
+    if shutil.which(command) is None:
+        return None, None
+    try:
+        result = subprocess.run(
+            [command, "--version"],
+            capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None, (
+            f"Version probe timed out after {timeout:g} seconds; "
+            f"'{command} --version' did not answer."
+        )
+    except OSError as exc:
+        return None, f"Version probe could not run '{command}': {exc}"
+    if result.returncode != 0:
+        return None, (
+            f"Version probe exited with code {result.returncode} for "
+            f"'{command} --version'."
+        )
+    output = result.stdout or result.stderr
+    for line in output.splitlines():
+        if line.strip():
+            return line.strip(), None
+    return None, f"Version probe for '{command}' printed nothing."
 
 
 def verify_all(catalog: Optional[Catalog],
