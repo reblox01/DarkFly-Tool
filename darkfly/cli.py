@@ -18,6 +18,8 @@ schema v2 catalog in ``catalog.json`` instead:
 - `DarkFly5 install`   - install a tool with a journaled, resumable plan.
 - `DarkFly5 uninstall` - reverse an install using the manifest.
 - `DarkFly5 installed` - list what DarkFly has installed.
+- `DarkFly5 update`    - update one installed tool, or all of them.
+- `DarkFly5 verify`    - check installed tools are still present.
 - `DarkFly5 doctor`    - print environment diagnostics.
 """
 
@@ -35,6 +37,7 @@ from darkfly import catalog as catalog_mod
 from darkfly import installer as installer_mod
 from darkfly import manifest as manifest_mod
 from darkfly import planner as planner_mod
+from darkfly import verify as verify_mod
 
 
 DEFAULT_CONFIG_LOCATIONS = [
@@ -308,7 +311,7 @@ def _cmd_install(args: argparse.Namespace) -> int:
         print("\nDry run: nothing was executed.")
         return 0
 
-    if not plan.steps:
+    if not plan.steps and plan.binary is None:
         print("\nThis tool has no automated install steps, so nothing "
               "was installed.")
         return 1
@@ -363,6 +366,151 @@ def _cmd_uninstall(args: argparse.Namespace) -> int:
 
     print(f"\nUninstalled {entry.get('name', args.tool_id)}.")
     return 0
+
+
+def _resolve_manifest_entry(tool_id: str,
+                              catalog: "catalog_mod.Catalog",
+                              ) -> Optional[Dict[str, Any]]:
+    """Find a manifest entry by tool id, resolving aliases first."""
+
+    entry = manifest_mod.get_entry(tool_id)
+    if entry is not None:
+        return entry
+    tool = catalog.get(tool_id)
+    if tool is not None:
+        return manifest_mod.get_entry(tool.id)
+    return None
+
+
+def _cmd_update(args: argparse.Namespace) -> int:
+    catalog = _load_v2_catalog()
+    if catalog is None:
+        return 1
+    env = planner_mod.detect_env()
+
+    if args.tool_id:
+        entry = _resolve_manifest_entry(args.tool_id, catalog)
+        if entry is None:
+            print(f"'{args.tool_id}' is not installed (no manifest "
+                  "entry). See 'DarkFly5 installed'.", file=sys.stderr)
+            return 1
+        tool = catalog.get(entry["id"])
+        try:
+            plan = planner_mod.build_update_plan(entry, env, tool)
+        except planner_mod.PlanError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(plan.render())
+        if args.dry_run:
+            print("\nDry run: nothing was executed.")
+            return 0
+        if not plan.steps:
+            print("\nThis tool cannot be updated automatically, so "
+                  "nothing was changed.")
+            return 1
+        if not args.yes:
+            if not _confirm("\nProceed with this update? [y/N] "):
+                print("Aborted. Nothing was updated.")
+                return 1
+        try:
+            installer_mod.update_tool(plan)
+        except installer_mod.InstallError as exc:
+            print(f"\nUpdate did not complete: {exc}", file=sys.stderr)
+            return 1
+        print(f"\nUpdated {plan.name}.")
+        return 0
+
+    # Update everything in the manifest.
+    tools = manifest_mod.load_manifest()
+    if not tools:
+        print("No tools have been installed with DarkFly yet, so "
+              "there is nothing to update.")
+        return 0
+
+    plans = []
+    for tool_id in sorted(tools):
+        entry = tools[tool_id]
+        try:
+            plan = planner_mod.build_update_plan(
+                entry, env, catalog.get(tool_id))
+        except planner_mod.PlanError as exc:
+            print(f"{tool_id}: cannot build an update plan: {exc}")
+            continue
+        plans.append(plan)
+
+    for plan in plans:
+        print(plan.render())
+        print()
+
+    if args.dry_run:
+        print("Dry run: nothing was executed.")
+        return 0
+
+    runnable = [plan for plan in plans if plan.steps]
+    if not runnable:
+        print("None of the installed tools can be updated "
+              "automatically.")
+        return 0
+
+    if not args.yes:
+        if not _confirm(f"Update {len(runnable)} tool(s)? [y/N] "):
+            print("Aborted. Nothing was updated.")
+            return 1
+
+    failures = 0
+    for plan in runnable:
+        try:
+            installer_mod.update_tool(plan)
+        except installer_mod.InstallError as exc:
+            print(f"Update of {plan.tool_id} failed: {exc}",
+                  file=sys.stderr)
+            failures += 1
+        else:
+            print(f"Updated {plan.name}.")
+    return 1 if failures else 0
+
+
+def _cmd_verify(args: argparse.Namespace) -> int:
+    catalog = _load_v2_catalog()
+    if catalog is None:
+        return 1
+
+    if args.tool_id:
+        entry = _resolve_manifest_entry(args.tool_id, catalog)
+        if entry is None:
+            print(f"'{args.tool_id}' is not installed (no manifest "
+                  "entry). See 'DarkFly5 installed'.", file=sys.stderr)
+            return 1
+        problems = verify_mod.verify_entry(entry, catalog)
+        if not problems:
+            print(f"OK: {entry['id']} - manifest entry, run command, "
+                  "and recorded paths all check out.")
+            return 0
+        print(f"PROBLEM: {entry['id']}")
+        for problem in problems:
+            print(f"  - {problem}")
+        return 1
+
+    tools = manifest_mod.load_manifest()
+    if not tools:
+        print("No tools have been installed with DarkFly yet, so "
+              "there is nothing to verify.")
+        return 0
+
+    results = verify_mod.verify_all(catalog)
+    bad = 0
+    for tool_id, problems in results.items():
+        if not problems:
+            print(f"OK: {tool_id}")
+        else:
+            bad += 1
+            print(f"PROBLEM: {tool_id}")
+            for problem in problems:
+                print(f"  - {problem}")
+    print(f"\nVerified {len(results)} tool(s): "
+          f"{len(results) - bad} OK, {bad} with problems.")
+    return 1 if bad else 0
 
 
 def _cmd_installed(args: argparse.Namespace) -> int:
@@ -463,6 +611,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_installed = sub.add_parser("installed",
                                  help="List tools installed by DarkFly")
     p_installed.set_defaults(func=_cmd_installed)
+
+    p_update = sub.add_parser("update",
+                              help="Update installed tools (v2 catalog)")
+    p_update.add_argument("tool_id", nargs="?",
+                          help="Tool to update (default: all installed)")
+    p_update.add_argument("--dry-run", action="store_true",
+                          help="Print the update plan(s) without "
+                               "executing them")
+    p_update.add_argument("--yes", "-y", action="store_true",
+                          help="Do not ask for confirmation")
+    p_update.set_defaults(func=_cmd_update)
+
+    p_verify = sub.add_parser("verify",
+                              help="Check installed tools still work")
+    p_verify.add_argument("tool_id", nargs="?",
+                          help="Tool to verify (default: all installed)")
+    p_verify.set_defaults(func=_cmd_verify)
 
     p_doctor = sub.add_parser("doctor", help="Diagnose the environment")
     p_doctor.set_defaults(func=_cmd_doctor)

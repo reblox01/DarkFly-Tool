@@ -1,7 +1,7 @@
 # DarkFly Next Generation: Design
 
-Status: Phase 1 design, agreed direction for the post-v5 rewrite of the
-modern DarkFly CLI.
+Status: Phases 1 and 2 implemented (on the `nextgen/phase-2` branch);
+agreed direction for the post-v5 rewrite of the modern DarkFly CLI.
 Audience: DarkFly-Tool maintainers and contributors.
 Companion research: `research_notes/darkfly-nextgen-research-20261023-1633`
 (deep-research brief on the modern tool-installer landscape). This document
@@ -84,8 +84,9 @@ Each tool entry:
 | `platforms` | object | `termux` (bool), `linux` (bool), `gui_required` (bool). GUI tools are listed for information only and are never fake-installed on Termux. |
 | `size_mb_estimate` | number or null | Rough installed size in MB, used for pre-flight warnings. |
 | `last_verified` | string | Date (`YYYY-MM-DD`) a maintainer last confirmed the entry installs as described. |
-| `install.backend` | string | One of `apt`, `pipx`, `go`, `git`, `manual`. See Section 3. |
-| `install.package` | string | Package name (apt, pipx), Go module path (go), repository URL (git), or an artifact reference (manual). |
+| `install.backend` | string | One of `apt`, `pipx`, `go`, `git`, `manual`, `binary`. See Section 3. |
+| `install.package` | string | Package name (apt, pipx), Go module path (go), repository URL (git), or an artifact reference (manual, binary). |
+| `install.binary` | object or absent | Binary backend only, required when `backend` is `binary`: `url` (HTTPS, may contain `{arch}` and `{version}` placeholders), `sha256` (map of architecture name to the expected 64-hex digest of the download), `archive` (one of `none`, `tar.gz`, `zip`), and `bin_name` (the file installed into `<darkfly home>/bin/`). See Section 3. |
 | `install.termux_package` | string or null | Package name under Termux `pkg` when it differs from `package`; null means "same as `package`". |
 | `install.version_pin` | string or null | Version or commit to pin, where the backend supports one. |
 | `install.deps_pkg` | list of string | Extra Termux packages to install first (via `pkg`). |
@@ -126,12 +127,17 @@ Example (abbreviated):
 Validation: `darkfly.catalog.validate_catalog` rejects a catalog with
 missing or mistyped fields, duplicate ids or aliases, unknown backends,
 unknown status values, tiers outside 0 to 3, and malformed `last_verified`
-dates. A catalog that fails validation is never used for installs.
+dates. Binary entries get extra checks: a missing `install.binary` block,
+a non-HTTPS URL, a missing or malformed checksum, an unknown archive
+type, or a `bin_name` that is a path all fail validation. A catalog that
+fails validation is never used for installs.
 
 Lookup order for `catalog.json`: current working directory first, then the
 repository root next to the installed package, then inside the package
-directory. This keeps the clone-and-run workflow working while leaving room
-for proper package data in a later packaging pass (see open questions).
+directory. Since Phase 2 the catalog also ships inside the package as
+package data (`darkfly/catalog.json`, declared in `pyproject.toml`), so
+pip installs outside a clone work; a test keeps the packaged copy
+byte-identical to the root file so the two can never drift.
 
 ## 3. Backends and priority
 
@@ -143,11 +149,51 @@ One backend per entry, chosen by the maintainer using this priority order
    downloads and never adds foreign repositories (the Katoolin rule: mixing
    a rolling Kali repo into a stable host leads to unresolvable dependency
    conflicts and a broken system).
-2. **Vendor binary release with checksum**: planned, not in Phase 1. For
-   Go and Rust tools on Termux arm64 a prebuilt upstream binary avoids
-   10 to 30 minute source builds and most build failures. Requires a
-   `sha256` field and atomic install (download to a temp dir, verify,
-   rename into place). See Section 10.
+2. **Vendor binary release with checksum** (`binary` backend,
+   implemented in Phase 2, minimal form): for Go and Rust tools on
+   Termux arm64 a prebuilt upstream binary avoids 10 to 30 minute
+   source builds and most build failures. The entry's
+   `install.binary` block carries a URL template (`{arch}` and
+   `{version}` placeholders) and a SHA-256 digest per architecture.
+   Planning resolves the URL for the detected architecture and fails
+   when the catalog has no checksum for it (an architecture without a
+   verified digest is not installable, full stop). Installing
+   downloads to a temp directory under the darkfly home, verifies the
+   digest *before* placing anything, reads the binary out of the
+   archive in memory when there is one (nothing is extracted to disk,
+   so archive path traversal cannot happen), and moves it into
+   `<darkfly home>/bin/<bin_name>` with mode 0755 via a temp file plus
+   rename. Uninstall deletes that file; update is not automated for
+   this backend (a new version means a new checksum, which is a
+   catalog change by design). Example entry shape, with placeholder
+   digests that are illustrative only and would fail verification:
+
+   ```json
+   "install": {
+     "backend": "binary",
+     "package": "example-tool",
+     "termux_package": null,
+     "version_pin": "v1.0.0",
+     "deps_pkg": [],
+     "deps_apt": [],
+     "binary": {
+       "url": "https://example.com/releases/{version}/tool-{arch}.tar.gz",
+       "sha256": {"aarch64": "<64 hex chars>", "x86_64": "<64 hex chars>"},
+       "archive": "tar.gz",
+       "bin_name": "tool"
+     }
+   }
+   ```
+
+   No catalog entry ships on this backend yet. The rule that decides
+   it: a shipped checksum must be a value a maintainer actually
+   verified against the vendor's published release. A wrong checksum
+   is worse than no binary entry at all (every install fails, or
+   worse, users learn to ignore checksum errors). Ligolo-ng is the
+   intended first user; it stays `manual`, pointing at the upstream
+   release page, until a maintainer verifies a release digest. The
+   backend is covered end to end by tests with a fake tool, including
+   the checksum-mismatch abort.
 3. **pipx / go install at a pin**: Python tools go through pipx so each
    tool lives in its own virtualenv and can be upgraded or removed
    cleanly. Go tools use `go install module@pin`. This tier is also where
@@ -203,6 +249,10 @@ Backend step shapes:
   unpinned.
 - git: `git clone --depth 1 <url> <dest>` when unpinned; a full clone plus
   `git -C <dest> checkout <version_pin>` when pinned.
+- binary: no argv steps at all. The plan instead carries the resolved
+  download URL, the expected SHA-256 for the detected architecture, and
+  the destination path, and the installer performs the download, the
+  verification, and the atomic placement itself (see Section 3).
 
 `--dry-run` prints the rendered plan (tool, backend, environment, size
 estimate, warnings, numbered steps, notes) and executes nothing.
@@ -237,7 +287,9 @@ Format:
 Fields per entry: `id`, `name`, `backend`, `package` (the resolved package
 actually installed on this platform), `version_pin`, `installed_at`
 (ISO 8601 UTC timestamp), `files_or_dirs` (paths DarkFly created, mainly
-git clone destinations), and `run` (the command the user runs).
+git clone destinations and binary-backend installs), and `run` (the
+command the user runs). An entry that has been through `DarkFly5 update`
+also carries `updated_at`; the original `installed_at` is preserved.
 
 Writes go through a temp file plus rename so a kill mid-write cannot
 corrupt the manifest. The manifest is the single source of truth for the
@@ -284,12 +336,23 @@ against the legacy `darkfly_tools.json`:
 | `DarkFly5 install <id> [--dry-run] [--yes]` | catalog v2 | Build the plan, print it, confirm interactively unless `--yes`, execute with journaling, record in the manifest. Resumes an interrupted install of the same tool. |
 | `DarkFly5 uninstall <id> [--dry-run] [--yes]` | manifest | Build the reverse plan from the manifest entry, confirm, execute, remove files DarkFly created, drop the manifest entry. |
 | `DarkFly5 installed` | manifest | List what DarkFly has installed, with backend, pin, and date. |
+| `DarkFly5 update [id] [--dry-run] [--yes]` | manifest + catalog | Update one installed tool, or all of them. The plan is built from the manifest entry's recorded backend, with pins and module paths taken from the current catalog when it has newer ones. |
+| `DarkFly5 verify [id]` | manifest + catalog | Check installed tools: manifest entry present, tool still in the catalog, run command findable (on PATH, or inside the clone for git installs), recorded paths still exist. Exits non-zero when any check fails. Does not execute the tools. |
 | `DarkFly5 doctor` | environment | Print detected environment, Python version, platform, which of `pkg`, `apt-get`, `pipx`, `go`, `git` are on PATH, free disk space, the darkfly home path, and the catalog validation result. |
 
 Uninstall step shapes by backend: apt becomes `pkg uninstall -y` (Termux)
 or `sudo apt-get remove -y` (Linux); pipx becomes `pipx uninstall <name>`;
 go removes the built binary from `~/go/bin/<run>`; git removes the clone
-directory recorded in the manifest; manual has nothing to undo.
+directory recorded in the manifest; binary deletes the installed file
+recorded in the manifest; manual has nothing to undo.
+
+Update step shapes by backend: apt becomes `pkg install -y <package>` on
+Termux (installing an installed package upgrades it, while `pkg upgrade`
+would upgrade the whole device) and `sudo apt-get install -y
+--only-upgrade <package>` on Linux; pipx becomes `pipx upgrade <name>`;
+go re-runs `go install <module>@<catalog pin>`; git fetches and checks
+out the catalog pin, or pulls with `--ff-only` when unpinned; manual and
+binary report that they cannot be updated automatically.
 
 Environment detection (`darkfly.planner.detect_env`) returns `termux`
 when `TERMUX_VERSION` is set or the home path contains `com.termux`,
@@ -305,8 +368,8 @@ These are ship-blockers, not aspirations:
   seen in AllHackingTools), and no obfuscated catalog.
 - HTTPS only for homepage, source, and clone URLs.
 - Pin versions or commits wherever the backend supports it; verify sha256
-  or signatures where upstream provides them (mandatory once the binary
-  backend lands).
+  or signatures where upstream provides them (mandatory for the binary
+  backend: no verified checksum, no entry).
 - Never run as root on Termux and never call sudo there. On Linux, sudo is
   confined to the apt steps the user just approved in the printed plan.
 - Never add foreign APT repositories, never edit files outside the tool's
@@ -353,24 +416,40 @@ resume, and the `search`, `install`, `uninstall`, `installed`, and
 `doctor` commands. Legacy `list`, `info`, and `menu` untouched. Tests for
 catalog, planner, and installer. Stdlib only.
 
-**Phase 2.** Grow the catalog toward the curated 60 to 100 (workflow
-categories, resources beyond SecLists such as PayloadsAllTheThings and
-selected wordlist bundles with size choices). Vendor binary backend with
-sha256 verification and atomic install. Delegation to `pdtm` for
-ProjectDiscovery tools where present. `update` and per-tool `verify`
-commands built on the manifest. Re-base `list`, `info`, and `menu` on
-catalog v2 and retire `darkfly_tools.json`. Catalog CI: schema validation,
-upstream liveness and archived checks, and `--dry-run` smoke tests per
-entry (the repo currently has only a PyPI publish workflow, no test CI).
-Package `catalog.json` properly so installs from PyPI work outside a
-clone.
+**Phase 2 (implemented on the `nextgen/phase-2` branch).** The catalog
+grew from 20 to 62 entries: the Tier 0 remainder (TShark, OpenBSD
+netcat, Hashcat, Impacket, Responder, and a deliberately `manual`,
+heavy-flagged Metasploit entry), the Tier 1 modern layer (the remaining
+ProjectDiscovery tools, Amass, the AD set of Kerbrute, BloodHound.py,
+Certipy, and evil-winrm-py, plus Ligolo-ng as an honest `manual` entry),
+Tier 2 resources (PayloadsAllTheThings, HackTricks, GTFOBins, and
+rockyou as a never-bundled `manual` reference), a small Tier 3
+(Caido, Scout Suite, Pacu), and GUI companions (ZAP, Burp Suite,
+Wireshark) listed as desktop-only `manual` entries that are never
+fake-installed. The binary backend landed in its minimal form (Section
+3) with validation, per-architecture checksums, and atomic install;
+no entry ships on it yet, because no release checksum has been
+maintainer-verified. `update` and `verify` commands were built on the
+manifest (Sections 5 and 7). Test CI exists now: a GitHub Actions
+workflow runs pytest on Python 3.10 and 3.12, validates the catalog,
+and smoke-tests `--dry-run` and `doctor` on every push and pull
+request. `catalog.json` is packaged as package data with a
+byte-identical sync test, so PyPI installs work outside a clone.
 
-**Phase 3.** Optional richer front-end (a fuzzy picker, possibly a Textual
-UI) strictly on top of the same subcommands. A published, honest benchmark
-of install time, failure rate, and uninstall cleanliness for the top
-catalog entries on a named Termux device and a named Linux VM. An
-experimental, opt-in, dry-run-gated AI assistant layer only if demand
-appears.
+Deferred from the original Phase 2 list to Phase 3: delegation to
+`pdtm` for ProjectDiscovery tools, re-basing `list`, `info`, and
+`menu` on catalog v2 and retiring `darkfly_tools.json`, upstream
+liveness and archived-status checks in CI (CI currently validates
+schema and dry-runs plans, it does not call home to upstreams), and
+further catalog growth toward 100 with wordlist size bundles.
+
+**Phase 3.** The deferred items above. An optional richer front-end (a
+fuzzy picker, possibly a Textual UI) strictly on top of the same
+subcommands. A published, honest benchmark of install time, failure
+rate, and uninstall cleanliness for the top catalog entries on a named
+Termux device and a named Linux VM. Deeper `verify` that optionally
+executes a tool's version probe. An experimental, opt-in,
+dry-run-gated AI assistant layer only if demand appears.
 
 ## 11. Open questions
 
@@ -381,20 +460,25 @@ Carried over from the research, deliberately unresolved:
   catalog must never quote benchmark numbers as fact; if DarkFly wants
   numbers, it has to measure its own (Phase 3 benchmark).
 - Delegate ProjectDiscovery tools to `pdtm`, or keep direct `go install`
-  plans? Phase 1 uses `go install`; delegation is a Phase 2 decision that
-  depends on how often `pdtm` is present on target devices.
+  plans? Phases 1 and 2 use `go install`; delegation is deferred to
+  Phase 3 and depends on how often `pdtm` is present on target devices.
+- First shipped binary-backend entry: Ligolo-ng is the candidate, but
+  it waits on a maintainer verifying a release checksum against the
+  vendor's published value (see Section 3). Until then it stays
+  `manual` on purpose.
 - Catalog governance: who verifies entries, how often `last_verified` is
   refreshed, and what the review bar is for new tools. Curation is the
   product; it needs named maintainers, not drive-by additions.
 - Pin freshness for git entries: a pinned commit is reproducible but ages.
   SecLists in Phase 1 is pinned to a tag as a placeholder; every pin needs
   a real verification pass before release, and a policy for bumping pins.
-- Wheel packaging: `catalog.json` at the repo root is found from a clone,
-  but a PyPI install needs the catalog shipped as package data or fetched
-  as a signed release artifact. To decide in Phase 2.
+- Wheel packaging: resolved in Phase 2. The catalog ships as package
+  data inside the wheel (`darkfly/catalog.json`), with a test keeping
+  it byte-identical to the root `catalog.json`.
 - Whether the v5 README's historical claims about tests and CI match the
-  repo: verified during Phase 1 (three CLI tests exist; the only workflow
-  is the PyPI publish one). Test CI is a Phase 2 item above.
+  repo: verified during Phase 1 (three CLI tests exist; the only
+  workflow was the PyPI publish one). Test CI landed in Phase 2 (see
+  Section 10); upstream liveness checks in CI are still open.
 - Community sources (Reddit, Null Byte) could not be verified directly in
   the research and are treated as second-hand consensus only; nothing in
   this design depends on them.

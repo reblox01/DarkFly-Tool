@@ -6,8 +6,10 @@ that describes every tool DarkFly knows how to install:
 
 - declarative per-tool metadata (homepage, license, status, tiers),
 - platform support (Termux / Linux / GUI-only),
-- a single install backend per tool (``apt``, ``pipx``, ``go``, ``git``
-  or ``manual``) with an optional version pin and extra dependencies.
+- a single install backend per tool (``apt``, ``pipx``, ``go``, ``git``,
+  ``manual``, or ``binary``) with an optional version pin and extra
+  dependencies. Binary entries carry an ``install.binary`` block with
+  per-architecture download URLs and SHA-256 checksums.
 
 Keeping the catalog as data (never code) is a safety property: it is
 diff-able in pull requests, and nothing in it can execute.
@@ -16,6 +18,7 @@ diff-able in pull requests, and nothing in it can execute.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -24,9 +27,12 @@ from typing import Any, Dict, List, Optional
 
 SCHEMA_VERSION = 2
 
-VALID_BACKENDS = {"apt", "pipx", "go", "git", "manual"}
+VALID_BACKENDS = {"apt", "pipx", "go", "git", "manual", "binary"}
 VALID_STATUSES = {"maintained", "stale", "archived"}
 VALID_TIERS = {0, 1, 2, 3}
+VALID_BINARY_ARCHIVES = {"none", "tar.gz", "zip"}
+
+_SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 # Fields every tool entry must carry. The design doc explains each one.
 REQUIRED_TOOL_FIELDS = [
@@ -57,6 +63,13 @@ REQUIRED_INSTALL_FIELDS = [
     "deps_apt",
 ]
 
+REQUIRED_BINARY_FIELDS = [
+    "url",
+    "sha256",
+    "archive",
+    "bin_name",
+]
+
 
 class CatalogError(Exception):
     """Raised when the catalog cannot be loaded or fails validation.
@@ -74,6 +87,23 @@ class CatalogError(Exception):
 
 
 @dataclass
+class BinarySpec:
+    """Download details for the ``binary`` backend.
+
+    ``url`` may contain ``{arch}`` and ``{version}`` placeholders,
+    resolved at plan time. ``sha256`` maps an architecture name (as
+    returned by ``darkfly.planner.detect_arch``) to the expected
+    hex digest of the downloaded file; an architecture with no
+    entry here cannot be installed.
+    """
+
+    url: str
+    sha256: Dict[str, str]
+    archive: str = "none"
+    bin_name: str = ""
+
+
+@dataclass
 class InstallSpec:
     backend: str
     package: str
@@ -81,6 +111,7 @@ class InstallSpec:
     version_pin: Optional[str] = None
     deps_pkg: List[str] = field(default_factory=list)
     deps_apt: List[str] = field(default_factory=list)
+    binary: Optional[BinarySpec] = None
 
 
 @dataclass
@@ -113,6 +144,15 @@ class ToolEntry:
     def from_dict(cls, data: Dict[str, Any]) -> "ToolEntry":
         install = data.get("install", {})
         platforms = data.get("platforms", {})
+        binary = None
+        binary_data = install.get("binary")
+        if isinstance(binary_data, dict):
+            binary = BinarySpec(
+                url=binary_data.get("url", ""),
+                sha256=dict(binary_data.get("sha256", {})),
+                archive=binary_data.get("archive", "none"),
+                bin_name=binary_data.get("bin_name", ""),
+            )
         return cls(
             id=data["id"],
             name=data["name"],
@@ -138,6 +178,7 @@ class ToolEntry:
                 version_pin=install.get("version_pin"),
                 deps_pkg=list(install.get("deps_pkg", [])),
                 deps_apt=list(install.get("deps_apt", [])),
+                binary=binary,
             ),
             run=data.get("run", ""),
             successor_to=data.get("successor_to"),
@@ -165,6 +206,69 @@ class Catalog:
 
 def _is_str_list(value: Any) -> bool:
     return isinstance(value, list) and all(isinstance(v, str) for v in value)
+
+
+def _validate_binary(binary: Any, where: str) -> List[str]:
+    """Validate the ``install.binary`` block of a binary-backend entry.
+
+    A binary entry without a URL, per-architecture checksums, and a
+    binary name is a download DarkFly cannot verify, so it is rejected
+    outright: an unverifiable checksum is worse than no entry.
+    """
+
+    problems: List[str] = []
+    prefix = f"{where}: install.binary"
+
+    if binary is None:
+        return [f"{prefix} is required for the binary backend"]
+    if not isinstance(binary, dict):
+        return [f"{prefix} must be an object"]
+
+    for fname in REQUIRED_BINARY_FIELDS:
+        if fname not in binary:
+            problems.append(f"{prefix}: missing field '{fname}'")
+
+    url = binary.get("url")
+    if url is not None:
+        if not isinstance(url, str) or not url.strip():
+            problems.append(f"{prefix}.url must be a non-empty string")
+        elif not url.startswith("https://"):
+            problems.append(f"{prefix}.url must be an HTTPS URL")
+
+    sha256 = binary.get("sha256")
+    if sha256 is not None:
+        if not isinstance(sha256, dict) or not sha256:
+            problems.append(
+                f"{prefix}.sha256 must be a non-empty object mapping "
+                "architecture names to hex digests"
+            )
+        else:
+            for arch, digest in sha256.items():
+                if not isinstance(digest, str) \
+                        or not _SHA256_RE.match(digest):
+                    problems.append(
+                        f"{prefix}.sha256[{arch!r}] must be a "
+                        "64-character hex SHA-256 digest"
+                    )
+
+    archive = binary.get("archive")
+    if archive is not None and archive not in VALID_BINARY_ARCHIVES:
+        problems.append(
+            f"{prefix}.archive must be one of "
+            f"{sorted(VALID_BINARY_ARCHIVES)}, got {archive!r}"
+        )
+
+    bin_name = binary.get("bin_name")
+    if bin_name is not None:
+        if not isinstance(bin_name, str) or not bin_name.strip():
+            problems.append(
+                f"{prefix}.bin_name must be a non-empty string")
+        elif "/" in bin_name:
+            problems.append(
+                f"{prefix}.bin_name must be a plain file name, "
+                "not a path")
+
+    return problems
 
 
 def validate_catalog(data: Any) -> List[str]:
@@ -320,6 +424,9 @@ def validate_catalog(data: Any) -> List[str]:
                             f"{where}: 'install.{fname}' must be a list "
                             "of strings"
                         )
+                if backend == "binary":
+                    problems.extend(
+                        _validate_binary(install.get("binary"), where))
 
         # Duplicate detection across ids and aliases.
         names: List[str] = []

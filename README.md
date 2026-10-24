@@ -30,7 +30,7 @@ In its original (v4) form, DarkFly-Tool is an installation tool for installing t
 
 ## Architecture: the next-generation engine
 
-The next-generation install engine lives on the `nextgen/phase-1` branch, alongside the classic v5 commands. The full design document is [docs/DESIGN.md](docs/DESIGN.md). This section is the short version, including the schemas.
+The next-generation install engine (Phases 1 and 2) lives in the v5 package, alongside the classic v5 commands. The full design document is [docs/DESIGN.md](docs/DESIGN.md). This section is the short version, including the schemas.
 
 ### How it fits together
 
@@ -38,7 +38,8 @@ The next-generation install engine lives on the `nextgen/phase-1` branch, alongs
                         +----------------------+
    user command ------> |  darkfly/cli.py      |
                         |  search, install,    |
-                        |  uninstall, doctor   |
+                        |  uninstall, update,  |
+                        |  verify, doctor      |
                         +----------+-----------+
                                    |
               +--------------------+--------------------+
@@ -70,13 +71,13 @@ Design rules that shape everything above:
 
 - The catalog is plain JSON in the repo: diff-able in pull requests, auditable by anyone. No obfuscated tool lists, no code fetched at startup.
 - Installing is two steps: build a **plan** (data), then execute it. `--dry-run` prints the plan and executes nothing.
-- Backends are chosen per tool by trust: signed `apt`/`pkg` package first, then `pipx` or `go install` at a pinned version, then a pinned `git` clone (with a visible warning), then `manual` (documented, never fake-installed).
+- Backends are chosen per tool by trust: signed `apt`/`pkg` package first, then a vendor `binary` release whose SHA-256 is verified before install, then `pipx` or `go install` at a pinned version, then a pinned `git` clone (with a visible warning), then `manual` (documented, never fake-installed).
 - Everything DarkFly installs is recorded in a manifest, so `uninstall` removes exactly what was added, and nothing else.
 - Installs are journaled: if Android kills Termux mid-install (the signal 9 problem), the next run resumes where it stopped instead of starting over.
 
 ### Schema 1: the catalog (`catalog.json`, schema v2)
 
-Top level: `{ "schema_version": 2, "tools": [ ... ] }`. Each tool entry:
+Top level: `{ "schema_version": 2, "tools": [ ... ] }`. The catalog currently ships **62 curated tools**: 14 core (tier 0), 40 in the modern layer (tier 1), 5 resources (tier 2), and 3 emerging (tier 3). Each tool entry:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -92,8 +93,9 @@ Top level: `{ "schema_version": 2, "tools": [ ... ] }`. Each tool entry:
 | `platforms` | object | `termux` (bool), `linux` (bool), `gui_required` (bool). |
 | `size_mb_estimate` | number or null | Rough installed size, used for pre-flight warnings. |
 | `last_verified` | string | Date a maintainer last confirmed the entry installs as described. |
-| `install.backend` | string | One of `apt`, `pipx`, `go`, `git`, `manual`. |
+| `install.backend` | string | One of `apt`, `pipx`, `go`, `git`, `manual`, `binary`. |
 | `install.package` | string | Package name, Go module path, or repo URL, depending on backend. |
+| `install.binary` | object | Binary backend only: download `url` (with `{arch}` and `{version}` placeholders), per-architecture `sha256` checksums, `archive` (`none`, `tar.gz`, `zip`), and the installed `bin_name`. The checksum is verified before anything is installed, and an architecture with no checksum cannot be installed. |
 | `install.termux_package` | string or null | Termux `pkg` name when it differs from `package`. |
 | `install.version_pin` | string or null | Version or commit to pin, where the backend supports one. |
 | `install.deps_pkg`, `install.deps_apt` | list of string | Extra packages to install first, per platform. |
@@ -151,7 +153,7 @@ Stored in the DarkFly home (`$DARKFLY_HOME` if set, else `~/.local/share/darkfly
 }
 ```
 
-The manifest is the single source of truth for `installed` and `uninstall`: if a tool is not in the manifest, DarkFly did not install it and will not claim otherwise.
+The manifest is the single source of truth for `installed`, `uninstall`, `update`, and `verify`: if a tool is not in the manifest, DarkFly did not install it and will not claim otherwise. After an update, the entry also gains an `updated_at` timestamp.
 
 ### Next-gen commands
 
@@ -161,8 +163,28 @@ DarkFly5 install nmap --dry-run   # print the plan for THIS environment, change 
 DarkFly5 install netexec          # shows the plan, asks, then installs (journaled, resumable)
 DarkFly5 installed                # list what the manifest says is installed
 DarkFly5 uninstall seclists       # reverse an install using the manifest
+DarkFly5 update                   # update everything DarkFly installed (or: update nmap)
+DarkFly5 verify                   # check installed tools: manifest, run command, files
 DarkFly5 doctor                   # environment, tools on PATH, catalog validation
 ```
+
+### Testing and simulation
+
+The engine is tested without touching a real system: no test installs a real tool, and no test uses the network. The suite (210 tests) runs with:
+
+```bash
+python -m pip install -e .[dev]
+pytest
+```
+
+How the simulation works:
+
+- **Simulated environments.** Environment detection is injectable, so tests plan installs for a simulated Termux and a simulated Linux side by side. That is how we know a Termux plan says `pkg install` and a Linux plan says `apt-get install`, without needing a phone.
+- **Every catalog entry is planned, on both environments.** Each of the 62 entries must produce either a valid plan with well-formed steps, or a clean platform error (for example a Linux-only tool refusing to plan on Termux). A catalog edit that breaks a plan breaks the build.
+- **Fake runner, fake downloader.** Installs execute through a runner interface and downloads through a single downloader function. Tests substitute fakes, so the journal, the resume-after-interruption logic, manifest writes, uninstall reversal, and the binary backend's SHA-256 check (including the mismatch case, which must install nothing) are all exercised end to end with zero side effects.
+- **Try a simulation yourself.** `--dry-run` is the same plan the tests assert on, shown to you: `DarkFly5 install metasploit-framework --dry-run` prints the size estimate, the heavy-install and lawful-use warnings, and every step it would take, then changes nothing. `DarkFly5 doctor` validates the catalog and reports your environment the same way the test suite sees it.
+
+CI runs the suite on Python 3.10 and 3.12 for every push and pull request.
 
 ---
 
