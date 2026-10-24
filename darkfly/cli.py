@@ -3,24 +3,20 @@
 This CLI is intentionally small and focused. It is designed to:
 
 - Run on Python 3.10+ on Linux / Termux.
-- Read a simple tool configuration file (YAML or JSON).
-- Provide basic commands:
-  - `DarkFly5 list`  – list available tools / categories.
-  - `DarkFly5 info`  – show details about a tool.
-  - `DarkFly5 menu`  – simple interactive menu.
-
-The goal is to provide a clean base that can be extended over time.
-
-The next-generation commands (see ``docs/DESIGN.md``) work on the
-schema v2 catalog in ``catalog.json`` instead:
-
-- `DarkFly5 search`    - search the catalog by name, alias, or keyword.
-- `DarkFly5 install`   - install a tool with a journaled, resumable plan.
-- `DarkFly5 uninstall` - reverse an install using the manifest.
-- `DarkFly5 installed` - list what DarkFly has installed.
-- `DarkFly5 update`    - update one installed tool, or all of them.
-- `DarkFly5 verify`    - check installed tools are still present.
-- `DarkFly5 doctor`    - print environment diagnostics.
+- Read the schema v2 tool catalog in ``catalog.json`` (see
+  ``docs/DESIGN.md``).
+- Provide commands:
+  - `DarkFly5 list`      - list available tools.
+  - `DarkFly5 info`      - show details and the install plan for a tool.
+  - `DarkFly5 menu`      - simple interactive menu.
+  - `DarkFly5 search`    - search the catalog by name, alias, or keyword.
+  - `DarkFly5 install`   - install a tool with a journaled, resumable plan.
+  - `DarkFly5 uninstall` - reverse an install using the manifest.
+  - `DarkFly5 installed` - list what DarkFly has installed.
+  - `DarkFly5 update`    - update one installed tool, or all of them.
+  - `DarkFly5 verify`    - check installed tools are still present
+                           (--versions also probes their versions).
+  - `DarkFly5 doctor`    - print environment diagnostics.
 """
 
 from __future__ import annotations
@@ -29,7 +25,6 @@ import argparse
 import json
 import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -40,162 +35,73 @@ from darkfly import planner as planner_mod
 from darkfly import verify as verify_mod
 
 
-DEFAULT_CONFIG_LOCATIONS = [
-    Path("darkfly_tools.json"),
-    Path("darkfly_tools.yaml"),  # reserved for a future YAML-based config
-]
-
-
-@dataclass
-class Tool:
-    id: str
-    name: str
-    description: str = ""
-    category: str = "general"
-    install_commands: List[str] | None = None
-
-
-def _detect_env() -> str:
-    """Detect a coarse runtime environment for better suggestions.
-
-    Returns one of:
-    - "termux" – running under Termux on Android.
-    - "linux" – Linux (non-Termux).
-    - "other" – anything else.
-    """
-
-    # Termux commonly exposes this variable
-    if os.environ.get("TERMUX_VERSION"):
-        return "termux"
-
-    home = str(Path.home())
-    if "com.termux" in home:
-        return "termux"
-
-    if sys.platform.startswith("linux"):
-        return "linux"
-
-    return "other"
-
-
-def _load_config(base_dir: Optional[Path] = None) -> Dict[str, Any]:
-    """Load the tool configuration from the repository or install directory.
-
-    For the initial version we support a small JSON file. If no configuration
-    file is found, we fall back to a tiny built-in example so that the CLI is
-    still usable out of the box.
-    """
-
-    base = base_dir or Path.cwd()
-
-    # Look for config files in a few conventional locations
-    for rel in DEFAULT_CONFIG_LOCATIONS:
-        candidate = base / rel
-        if candidate.is_file() and candidate.suffix == ".json":
-            with candidate.open("r", encoding="utf-8") as f:
-                return json.load(f)
-        # YAML support can be added later if desired.
-
-    # Fallback: built-in minimal configuration
-    return {
-        "categories": [
-            {
-                "id": "examples",
-                "name": "Example Tools",
-                "tools": [
-                    {
-                        "id": "nmap",
-                        "name": "Nmap",
-                        "description": "Show basic information about Nmap and how to install it.",
-                        "install_commands": [
-                            "sudo apt install nmap",
-                            "# Termux: pkg install nmap",
-                        ],
-                    }
-                ],
-            }
-        ]
-    }
-
-
-def _iter_tools(config: Dict[str, Any]) -> List[Tool]:
-    tools: List[Tool] = []
-    for cat in config.get("categories", []):
-        cat_id = cat.get("id", "general")
-        for t in cat.get("tools", []):
-            tools.append(
-                Tool(
-                    id=t.get("id"),
-                    name=t.get("name", t.get("id", "")),
-                    description=t.get("description", ""),
-                    category=cat_id,
-                    install_commands=t.get("install_commands"),
-                )
-            )
-    return tools
+# ---------------------------------------------------------------------------
+# Legacy commands (list / info / menu), re-based on catalog v2.
+#
+# Phase 3 retired darkfly_tools.json: these commands now read the same
+# schema v2 catalog as the rest of the CLI. Their outward behavior is
+# kept as close as possible: list prints tools, info prints a tool's
+# details plus the install plan for this environment, and menu lets a
+# user pick a tool by number and shows its info. There is no longer a
+# built-in fallback catalog: the packaged catalog ships inside the
+# darkfly package, so load failure is a real error, not a silent
+# substitution.
+# ---------------------------------------------------------------------------
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
-    config = _load_config()
-    tools = _iter_tools(config)
-
-    if not tools:
-        print("No tools are defined in darkfly_tools.json (or built-in config).", file=sys.stderr)
+    catalog = _load_v2_catalog()
+    if catalog is None:
         return 1
 
     print("Available tools:\n")
-    for tool in tools:
-        print(f"- {tool.id} (category: {tool.category}) - {tool.name}")
+    for tool in catalog.tools:
+        categories = ", ".join(tool.categories)
+        print(f"- {tool.id} (categories: {categories}) - {tool.name}")
     return 0
 
 
 def _cmd_info(args: argparse.Namespace) -> int:
-    config = _load_config()
-    tools = {t.id: t for t in _iter_tools(config)}
+    catalog = _load_v2_catalog()
+    if catalog is None:
+        return 1
 
-    tool = tools.get(args.tool_id)
-    if not tool:
-        print(f"Unknown tool id: {args.tool_id}", file=sys.stderr)
+    tool = catalog.get(args.tool_id)
+    if tool is None:
+        print(f"Unknown tool id: {args.tool_id} "
+              "(try 'DarkFly5 search' to find it)", file=sys.stderr)
         return 1
 
     print(f"ID:   {tool.id}")
     print(f"Name: {tool.name}")
-    print(f"Category: {tool.category}")
+    print(f"Categories: {', '.join(tool.categories)}")
     if tool.description:
         print(f"Description: {tool.description}")
-    if tool.install_commands:
-        env = _detect_env()
+    print(f"Backend: {tool.install.backend}")
+    print(f"Status: {tool.status}, tier: {tool.tier}")
+    print(f"Homepage: {tool.homepage}")
+    if tool.run:
+        print(f"Run: {tool.run}")
 
-        # Heuristics based on common package manager commands
-        termux_cmds = [c for c in tool.install_commands if "pkg " in c or "Termux" in c]
-        linux_cmds = [c for c in tool.install_commands if "apt " in c]
-        generic_cmds = [
-            c
-            for c in tool.install_commands
-            if c not in termux_cmds and c not in linux_cmds
-        ]
+    # The install plan for this environment replaces the old
+    # hand-written suggestion lists.
+    env = planner_mod.detect_env()
+    try:
+        plan = planner_mod.build_install_plan(tool, env)
+    except planner_mod.PlanError as exc:
+        print(f"\nInstall on this environment: {exc}")
+        return 0
 
-        if env == "termux":
-            preferred = termux_cmds or linux_cmds or generic_cmds
-            label = "Termux"
-        elif env == "linux":
-            preferred = linux_cmds or termux_cmds or generic_cmds
-            label = "Linux"
-        else:
-            preferred = generic_cmds or linux_cmds or termux_cmds
-            label = "this platform"
-
-        print(f"\nRecommended install commands for {label}:")
-        for cmd in preferred:
-            print(f"  {cmd}")
-
-        remaining = [c for c in tool.install_commands if c not in preferred]
-        if remaining:
-            print("\nOther install commands:")
-            for cmd in remaining:
-                print(f"  {cmd}")
+    print(f"\nRecommended install plan for {env}:")
+    if plan.steps:
+        for step in plan.steps:
+            print(f"  $ {' '.join(step.argv)}")
+    elif plan.binary is not None:
+        print(f"  Download and verify: {plan.binary.url}")
     else:
-        print("\nNo install commands recorded for this tool yet.")
+        print("  No automated install steps (manual tool).")
+    for warning in plan.warnings:
+        print(f"  ! {warning}")
     return 0
 
 
@@ -206,17 +112,16 @@ def _cmd_menu(args: argparse.Namespace) -> int:
     (curses-based, fuzzy finder, etc.) in future versions.
     """
 
-    config = _load_config()
-    tools = _iter_tools(config)
-    if not tools:
-        print("No tools are defined in darkfly_tools.json (or built-in config).", file=sys.stderr)
+    catalog = _load_v2_catalog()
+    if catalog is None:
         return 1
 
+    tools = catalog.tools
     print("DarkFly v5 - simple menu")
     print("Select a tool by number, or 'q' to quit.\n")
 
     for idx, t in enumerate(tools, start=1):
-        print(f"{idx}. {t.name} [{t.id}] (category: {t.category})")
+        print(f"{idx}. {t.name} [{t.id}]")
 
     while True:
         choice = input("Select: ").strip()
@@ -233,8 +138,10 @@ def _cmd_menu(args: argparse.Namespace) -> int:
         # Reuse info command behavior
         print()
         _cmd_info(argparse.Namespace(tool_id=tool.id))
-        print("\n(Use the suggested commands above in your shell to install/run this tool.)\n")
+        print("\n(Use 'DarkFly5 install' to install the tool above.)\n")
     # Unreachable
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -471,6 +378,26 @@ def _cmd_update(args: argparse.Namespace) -> int:
     return 1 if failures else 0
 
 
+def _report_verify(tool_id: str, problems: List[str],
+                   versions: bool, entry: Dict[str, Any]) -> int:
+    """Print one tool's verify result; return 1 when it has problems."""
+
+    if versions:
+        version, probe_problem = verify_mod.version_probe(entry)
+        if version is not None:
+            print(f"  version: {version}")
+        elif probe_problem is not None:
+            problems = problems + [probe_problem]
+
+    if not problems:
+        print(f"OK: {tool_id}")
+        return 0
+    print(f"PROBLEM: {tool_id}")
+    for problem in problems:
+        print(f"  - {problem}")
+    return 1
+
+
 def _cmd_verify(args: argparse.Namespace) -> int:
     catalog = _load_v2_catalog()
     if catalog is None:
@@ -483,14 +410,12 @@ def _cmd_verify(args: argparse.Namespace) -> int:
                   "entry). See 'DarkFly5 installed'.", file=sys.stderr)
             return 1
         problems = verify_mod.verify_entry(entry, catalog)
-        if not problems:
+        if not problems and not args.versions:
             print(f"OK: {entry['id']} - manifest entry, run command, "
                   "and recorded paths all check out.")
             return 0
-        print(f"PROBLEM: {entry['id']}")
-        for problem in problems:
-            print(f"  - {problem}")
-        return 1
+        return _report_verify(entry["id"], problems, args.versions,
+                              entry)
 
     tools = manifest_mod.load_manifest()
     if not tools:
@@ -501,13 +426,8 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     results = verify_mod.verify_all(catalog)
     bad = 0
     for tool_id, problems in results.items():
-        if not problems:
-            print(f"OK: {tool_id}")
-        else:
-            bad += 1
-            print(f"PROBLEM: {tool_id}")
-            for problem in problems:
-                print(f"  - {problem}")
+        bad += _report_verify(tool_id, problems, args.versions,
+                              tools[tool_id])
     print(f"\nVerified {len(results)} tool(s): "
           f"{len(results) - bad} OK, {bad} with problems.")
     return 1 if bad else 0
@@ -537,6 +457,11 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     env = planner_mod.detect_env()
     print("DarkFly doctor\n")
     print(f"Environment:      {env}")
+    if env in ("debian", "rhel", "linux"):
+        distro_id = planner_mod.os_release_id()
+        print(f"Distro family:    {env}")
+        if distro_id:
+            print(f"Distro ID:        {distro_id}")
     print(f"Python version:   {platform.python_version()}")
     print(f"Platform:         {platform.platform()}")
     print(f"DarkFly home:     {manifest_mod.darkfly_home()}")
@@ -627,6 +552,9 @@ def build_parser() -> argparse.ArgumentParser:
                               help="Check installed tools still work")
     p_verify.add_argument("tool_id", nargs="?",
                           help="Tool to verify (default: all installed)")
+    p_verify.add_argument("--versions", action="store_true",
+                          help="Also run '<run> --version' for tools "
+                               "found on PATH (opt-in execution)")
     p_verify.set_defaults(func=_cmd_verify)
 
     p_doctor = sub.add_parser("doctor", help="Diagnose the environment")

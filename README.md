@@ -13,7 +13,7 @@ In its original (v4) form, DarkFly-Tool is an installation tool for installing t
 | Target: Linux                                | ✓                    | ✗ (not reliable)       |
 | Target: Termux                               | ✓                    | ✓                      |
 | Actively maintained                          | ✓                    | ✗ (frozen legacy)      |
-| Configurable tools via `darkfly_tools.json`  | ✓                    | ✗                      |
+| Configurable tools via `catalog.json` (schema v2)  | ✓                    | ✗                      |
 | Obfuscated/installer-based tool management   | ✗                    | ✓                      |
 
 ### Detailed comparison
@@ -24,7 +24,7 @@ In its original (v4) form, DarkFly-Tool is an installation tool for installing t
 | Target environments | Linux and Termux with Python 3.10+ and pip                     | Primarily Termux (Android); regular Linux may not work reliably      |
 | Status              | Active / modern path                                           | Frozen legacy path, kept for historical compatibility                |
 | Install / usage     | `python -m pip install -e .[dev]` then `DarkFly5 ...`          | `python2 install.py` then `DarkFly`                                  |
-| Tool list           | Config-driven via `darkfly_tools.json` (easy to extend/modify) | Hard-coded/obfuscated inside legacy Python 2 and `.module` artifacts |
+| Tool list           | Config-driven via `catalog.json` schema v2 (easy to extend/modify) | Hard-coded/obfuscated inside legacy Python 2 and `.module` artifacts |
 
 ---
 
@@ -165,12 +165,19 @@ DarkFly5 installed                # list what the manifest says is installed
 DarkFly5 uninstall seclists       # reverse an install using the manifest
 DarkFly5 update                   # update everything DarkFly installed (or: update nmap)
 DarkFly5 verify                   # check installed tools: manifest, run command, files
-DarkFly5 doctor                   # environment, tools on PATH, catalog validation
+DarkFly5 verify --versions        # also probe each tool's --version (opt-in)
+DarkFly5 doctor                   # environment, distro family, tools on PATH, catalog validation
 ```
+
+### Distro support, pdtm, and upstream checks
+
+- **Distro families.** On Linux the planner reads `/etc/os-release` and picks the package manager: `pkg` on Termux, `dnf` on RHEL-family systems (RHEL, Fedora, CentOS, AlmaLinux, Rocky, Oracle Linux), `apt-get` on Debian-family and anything else. The catalog's `install.rhel_package` field overrides the package name on RHEL where it is set (today only netcat, which maps to `nmap-ncat`); every other RHEL package name still needs a real-distro verification pass, and RHEL support so far is plan-level simulation, not a real RHEL run (see docs/DESIGN.md).
+- **pdtm, opt-in only.** With `DARKFLY_PDTM=1` set and `pdtm` on PATH, ProjectDiscovery tools (Nuclei, Subfinder, httpx, Naabu, Katana, dnsx) install and update through `pdtm -i` / `pdtm -u` instead of `go install`. Without both conditions the default plan is unchanged.
+- **Upstream liveness.** `tools/check_upstream.py` HEAD-checks every catalog homepage and source URL and fails on any dead link; it runs weekly from `.github/workflows/upstream-check.yml`.
 
 ### Testing and simulation
 
-The engine is tested without touching a real system: no test installs a real tool, and no test uses the network. The suite (210 tests) runs with:
+The engine is tested without touching a real system: no test installs a real tool, and no test uses the network. The suite (361 tests) runs with:
 
 ```bash
 python -m pip install -e .[dev]
@@ -179,8 +186,8 @@ pytest
 
 How the simulation works:
 
-- **Simulated environments.** Environment detection is injectable, so tests plan installs for a simulated Termux and a simulated Linux side by side. That is how we know a Termux plan says `pkg install` and a Linux plan says `apt-get install`, without needing a phone.
-- **Every catalog entry is planned, on both environments.** Each of the 62 entries must produce either a valid plan with well-formed steps, or a clean platform error (for example a Linux-only tool refusing to plan on Termux). A catalog edit that breaks a plan breaks the build.
+- **Simulated environments.** Environment detection is injectable, so tests plan installs for simulated Termux, Debian, RHEL, and generic Linux side by side, using fake `/etc/os-release` files. That is how we know a Termux plan says `pkg install`, a RHEL plan says `dnf install`, and a Debian plan says `apt-get install`, without needing a phone or a RHEL machine.
+- **Every catalog entry is planned, on every simulated environment.** Each of the 62 entries must produce either a valid plan with well-formed steps, or a clean platform error (for example a Linux-only tool refusing to plan on Termux). A catalog edit that breaks a plan breaks the build.
 - **Fake runner, fake downloader.** Installs execute through a runner interface and downloads through a single downloader function. Tests substitute fakes, so the journal, the resume-after-interruption logic, manifest writes, uninstall reversal, and the binary backend's SHA-256 check (including the mismatch case, which must install nothing) are all exercised end to end with zero side effects.
 - **Try a simulation yourself.** `--dry-run` is the same plan the tests assert on, shown to you: `DarkFly5 install metasploit-framework --dry-run` prints the size estimate, the heavy-install and lawful-use warnings, and every step it would take, then changes nothing. `DarkFly5 doctor` validates the catalog and reports your environment the same way the test suite sees it.
 
@@ -205,7 +212,7 @@ This installs the `DarkFly5` command and development dependencies (like pytest).
 
 ### Usage
 
-List available tools (from `darkfly_tools.json` or the built-in examples):
+List available tools (from the `catalog.json` catalog):
 
 ```bash
 DarkFly5 list
@@ -223,7 +230,7 @@ Open a simple interactive menu:
 DarkFly5 menu
 ```
 
-You can add or change tools and categories by editing `darkfly_tools.json` in the repository root. The JSON structure is simple and designed to be extended over time.
+You can add or change tools by editing `catalog.json` in the repository root (schema v2, documented in docs/DESIGN.md). The same file ships inside the package, and a test keeps the two copies identical.
 
 ### Running tests (modern CLI)
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 import platform
 import shlex
+import shutil
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -82,16 +83,105 @@ class PlanError(Exception):
     """Raised when no plan can be built for a tool in this environment."""
 
 
-def detect_env(environ: Optional[Mapping[str, str]] = None) -> str:
+# Distro identifiers (from /etc/os-release ID and ID_LIKE) that map
+# to each package-manager family. Checked against the RHEL family
+# first: a distro in both sets does not exist in practice, and the
+# RHEL family is the narrower, more surprising match.
+_DEBIAN_DISTRO_IDS = {"debian", "ubuntu", "raspbian"}
+_RHEL_DISTRO_IDS = {"rhel", "fedora", "centos", "almalinux", "rocky",
+                    "oraclelinux"}
+
+# Environments that behave like Linux for platform support and for
+# the apt-get fallback. "debian" and "rhel" refine the package
+# manager; "linux" is the fallback for unrecognised distros and
+# keeps the historical apt-get behavior.
+_LINUX_FAMILIES = ("debian", "rhel", "linux")
+
+
+def _parse_os_release(text: str) -> Dict[str, str]:
+    """Parse /etc/os-release text into a key -> value mapping.
+
+    Values may be quoted; quotes are stripped. Malformed lines are
+    ignored rather than failing detection.
+    """
+
+    fields: Dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] \
+                and value[0] in ('"', "'"):
+            value = value[1:-1]
+        fields[key.strip()] = value
+    return fields
+
+
+def detect_distro_family(os_release_path: Optional[Path] = None,
+                         environ: Optional[Mapping[str, str]] = None
+                         ) -> str:
+    """Return the distro family: "debian", "rhel", or "linux".
+
+    Detection reads /etc/os-release (or the path in the
+    ``DARKFLY_OS_RELEASE`` environment variable, or an explicit path
+    passed by tests) and matches its ID and ID_LIKE tokens. Anything
+    unrecognised, or an unreadable file, falls back to "linux", which
+    keeps the historical apt-get behavior.
+    """
+
+    env = os.environ if environ is None else environ
+    override = env.get("DARKFLY_OS_RELEASE")
+    path = Path(os_release_path) if os_release_path is not None \
+        else Path(override) if override else Path("/etc/os-release")
+    try:
+        fields = _parse_os_release(path.read_text(encoding="utf-8"))
+    except OSError:
+        return "linux"
+
+    tokens = set()
+    if fields.get("ID"):
+        tokens.add(fields["ID"].lower())
+    tokens.update(fields.get("ID_LIKE", "").lower().split())
+
+    if tokens & _RHEL_DISTRO_IDS:
+        return "rhel"
+    if tokens & _DEBIAN_DISTRO_IDS:
+        return "debian"
+    return "linux"
+
+
+def os_release_id(os_release_path: Optional[Path] = None,
+                  environ: Optional[Mapping[str, str]] = None
+                  ) -> Optional[str]:
+    """Return the ID from /etc/os-release, or None when unavailable."""
+
+    env = os.environ if environ is None else environ
+    override = env.get("DARKFLY_OS_RELEASE")
+    path = Path(os_release_path) if os_release_path is not None \
+        else Path(override) if override else Path("/etc/os-release")
+    try:
+        fields = _parse_os_release(path.read_text(encoding="utf-8"))
+    except OSError:
+        return None
+    return fields.get("ID") or None
+
+
+def detect_env(environ: Optional[Mapping[str, str]] = None,
+               os_release_path: Optional[Path] = None) -> str:
     """Detect a coarse runtime environment.
 
     Returns one of:
     - "termux" - running under Termux on Android.
-    - "linux" - Linux (non-Termux).
+    - "debian" - Debian-family Linux (apt-get).
+    - "rhel" - RHEL-family Linux (dnf).
+    - "linux" - other Linux (apt-get fallback, as before).
     - "other" - anything else.
 
     ``environ`` defaults to ``os.environ``; tests pass an explicit
-    mapping to simulate Termux deterministically.
+    mapping to simulate Termux deterministically, and
+    ``os_release_path`` lets tests simulate other distros.
     """
 
     env = os.environ if environ is None else environ
@@ -105,9 +195,32 @@ def detect_env(environ: Optional[Mapping[str, str]] = None) -> str:
         return "termux"
 
     if sys.platform.startswith("linux"):
-        return "linux"
+        return detect_distro_family(os_release_path, env)
 
     return "other"
+
+
+def _is_projectdiscovery(tool: ToolEntry) -> bool:
+    """True when a tool's source is a ProjectDiscovery repository."""
+
+    source = (tool.source or "").lower()
+    if not source.startswith("https://github.com/"):
+        return False
+    path = source[len("https://github.com/"):]
+    return path.startswith("projectdiscovery/")
+
+
+def pdtm_enabled(environ: Optional[Mapping[str, str]] = None) -> bool:
+    """True only when pdtm delegation is opted into AND available.
+
+    Opt-in is the ``DARKFLY_PDTM=1`` environment variable; availability
+    is ``pdtm`` on PATH. Both must hold, otherwise plans keep the
+    default per-backend steps.
+    """
+
+    env = os.environ if environ is None else environ
+    return env.get("DARKFLY_PDTM") == "1" \
+        and shutil.which("pdtm") is not None
 
 
 @dataclass
@@ -208,7 +321,7 @@ def _check_platform(tool: ToolEntry, env: str) -> None:
             f"{tool.name} is not available on Termux. See {tool.homepage} "
             "for desktop installation options."
         )
-    if env == "linux" and not tool.platforms.linux:
+    if env in _LINUX_FAMILIES and not tool.platforms.linux:
         raise PlanError(
             f"{tool.name} is not available on Linux. See {tool.homepage} "
             "for other platforms."
@@ -231,7 +344,16 @@ def _dependency_steps(tool: ToolEntry, env: str) -> List[PlanStep]:
                 description=f"Install dependency {dep} (Termux pkg)",
                 argv=["pkg", "install", "-y", dep],
             ))
-    elif env == "linux":
+    elif env == "rhel":
+        # The deps_apt list is reused: the same dependency names are
+        # installed with dnf. Entries with RHEL-specific dependency
+        # names still need a real-distro verification pass.
+        for dep in tool.install.deps_apt:
+            steps.append(PlanStep(
+                description=f"Install dependency {dep} (dnf)",
+                argv=["sudo", "dnf", "install", "-y", dep],
+            ))
+    elif env in _LINUX_FAMILIES:
         for dep in tool.install.deps_apt:
             steps.append(PlanStep(
                 description=f"Install dependency {dep} (apt)",
@@ -293,14 +415,23 @@ def build_install_plan(tool: ToolEntry, env: str,
         plan.warnings.append(LAWFUL_USE_NOTICE)
 
     if spec.backend == "apt":
-        package = spec.termux_package or spec.package \
-            if env == "termux" else spec.package
+        if env == "termux":
+            package = spec.termux_package or spec.package
+        elif env == "rhel":
+            package = spec.rhel_package or spec.package
+        else:
+            package = spec.package
         plan.package = package
         plan.steps.extend(_dependency_steps(tool, env))
         if env == "termux":
             plan.steps.append(PlanStep(
                 description=f"Install {package} (Termux pkg)",
                 argv=["pkg", "install", "-y", package],
+            ))
+        elif env == "rhel":
+            plan.steps.append(PlanStep(
+                description=f"Install {package} (dnf)",
+                argv=["sudo", "dnf", "install", "-y", package],
             ))
         else:
             plan.steps.append(PlanStep(
@@ -324,17 +455,39 @@ def build_install_plan(tool: ToolEntry, env: str,
     elif spec.backend == "go":
         plan.package = spec.package
         plan.steps.extend(_dependency_steps(tool, env))
-        pin = spec.version_pin or "latest"
-        if spec.version_pin is None:
-            plan.warnings.append(GO_UNPINNED_WARNING)
-        plan.steps.append(PlanStep(
-            description=f"Build and install {spec.package} with Go",
-            argv=["go", "install", f"{spec.package}@{pin}"],
-        ))
-        plan.notes.append(
-            "The binary lands in ~/go/bin; make sure that directory is "
-            "on your PATH."
-        )
+        if _is_projectdiscovery(tool) and pdtm_enabled():
+            # Opt-in delegation: hand this ProjectDiscovery tool to
+            # pdtm, which manages its own cached catalog and binary
+            # installs. See docs/DESIGN.md for the flag uncertainty
+            # note: the research confirms pdtm's -ia/-ua/-l flags;
+            # the per-tool -i form is the documented per-tool
+            # install flag and is assumed here, not confirmed live.
+            plan.steps.append(PlanStep(
+                description=f"Install {tool.id} with pdtm "
+                            "(opt-in delegation)",
+                argv=["pdtm", "-i", tool.id],
+            ))
+            plan.notes.append(
+                "Delegated to pdtm because DARKFLY_PDTM=1 is set and "
+                "pdtm is on PATH. Unset DARKFLY_PDTM for the default "
+                "go install plan."
+            )
+            plan.notes.append(
+                "pdtm manages the tool's own updates; DarkFly's "
+                "update command delegates the same way."
+            )
+        else:
+            pin = spec.version_pin or "latest"
+            if spec.version_pin is None:
+                plan.warnings.append(GO_UNPINNED_WARNING)
+            plan.steps.append(PlanStep(
+                description=f"Build and install {spec.package} with Go",
+                argv=["go", "install", f"{spec.package}@{pin}"],
+            ))
+            plan.notes.append(
+                "The binary lands in ~/go/bin; make sure that "
+                "directory is on your PATH."
+            )
 
     elif spec.backend == "git":
         plan.package = spec.package
@@ -480,6 +633,11 @@ def build_update_plan(entry: Dict[str, Any], env: str,
                             "Termux package",
                 argv=["pkg", "install", "-y", package],
             ))
+        elif env == "rhel":
+            plan.steps.append(PlanStep(
+                description=f"Upgrade {package} (dnf)",
+                argv=["sudo", "dnf", "upgrade", "-y", package],
+            ))
         else:
             plan.steps.append(PlanStep(
                 description=f"Upgrade {package} (apt, only-upgrade)",
@@ -497,6 +655,18 @@ def build_update_plan(entry: Dict[str, Any], env: str,
     elif backend == "go":
         module = tool.install.package if tool is not None else package
         plan.package = module
+        if tool is not None and _is_projectdiscovery(tool) \
+                and pdtm_enabled():
+            plan.steps.append(PlanStep(
+                description=f"Update {tool.id} with pdtm "
+                            "(opt-in delegation)",
+                argv=["pdtm", "-u", tool.id],
+            ))
+            plan.notes.append(
+                "Delegated to pdtm because DARKFLY_PDTM=1 is set and "
+                "pdtm is on PATH."
+            )
+            return plan
         effective_pin = pin or "latest"
         if pin is None:
             plan.warnings.append(GO_UNPINNED_WARNING)
@@ -592,6 +762,11 @@ def build_uninstall_plan(entry: Dict[str, Any], env: str) -> InstallPlan:
             plan.steps.append(PlanStep(
                 description=f"Remove {package} (Termux pkg)",
                 argv=["pkg", "uninstall", "-y", package],
+            ))
+        elif env == "rhel":
+            plan.steps.append(PlanStep(
+                description=f"Remove {package} (dnf)",
+                argv=["sudo", "dnf", "remove", "-y", package],
             ))
         else:
             plan.steps.append(PlanStep(

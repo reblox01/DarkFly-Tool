@@ -108,6 +108,7 @@ class InstallSpec:
     backend: str
     package: str
     termux_package: Optional[str] = None
+    rhel_package: Optional[str] = None
     version_pin: Optional[str] = None
     deps_pkg: List[str] = field(default_factory=list)
     deps_apt: List[str] = field(default_factory=list)
@@ -175,6 +176,7 @@ class ToolEntry:
                 backend=install.get("backend", ""),
                 package=install.get("package", ""),
                 termux_package=install.get("termux_package"),
+                rhel_package=install.get("rhel_package"),
                 version_pin=install.get("version_pin"),
                 deps_pkg=list(install.get("deps_pkg", [])),
                 deps_apt=list(install.get("deps_apt", [])),
@@ -411,7 +413,8 @@ def validate_catalog(data: Any) -> List[str]:
                         f"{where}: 'install.package' must be a "
                         "non-empty string"
                     )
-                for fname in ("termux_package", "version_pin"):
+                for fname in ("termux_package", "rhel_package",
+                               "version_pin"):
                     value = install.get(fname)
                     if value is not None and not isinstance(value, str):
                         problems.append(

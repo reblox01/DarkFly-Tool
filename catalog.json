@@ -720,7 +720,8 @@
         "deps_pkg": [],
         "package": "netcat-openbsd",
         "termux_package": "netcat",
-        "version_pin": null
+        "version_pin": null,
+        "rhel_package": "nmap-ncat"
       },
       "last_verified": "2026-10-23",
       "license": "BSD-3-Clause",

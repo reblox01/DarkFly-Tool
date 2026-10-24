@@ -45,7 +45,9 @@ def test_detect_env_simulated_termux():
     assert planner.detect_env(
         {"HOME": "/data/data/com.termux/files/home"}) == "termux"
     linux_env = planner.detect_env({"HOME": "/home/user"})
-    assert linux_env in {"linux", "other"}  # depends on the host platform
+    # Depends on the host platform: a distro family on Linux, or
+    # "other" off Linux.
+    assert linux_env in {"debian", "rhel", "linux", "other"}
 
 
 def test_apt_plan_uses_pkg_on_termux():
