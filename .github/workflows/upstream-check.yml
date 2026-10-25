@@ -1,0 +1,32 @@
+# Weekly upstream liveness check for the DarkFly catalog.
+#
+# Runs tools/check_upstream.py against catalog.json: a HEAD request
+# (GET fallback) per homepage and source URL. A dead upstream or a
+# renamed repository fails the run instead of silently rotting the
+# catalog. This is a read-only network check; it installs nothing.
+#
+# Note: like ci.yml, this file lives under .github/workflows/, which
+# the Muse GitHub App cannot write without the Workflows permission.
+# It is committed here for the owner to add through the GitHub web UI
+# or after granting that permission.
+name: Upstream check
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check catalog upstream URLs
+        run: python3 tools/check_upstream.py catalog.json
