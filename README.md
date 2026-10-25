@@ -26,6 +26,12 @@ cd DarkFly-Tool
 python -m pip install -e .
 ```
 
+Or install the published package (same CLI, no clone needed):
+
+```bash
+python -m pip install darkfly-tool
+```
+
 Then:
 
 ```bash
