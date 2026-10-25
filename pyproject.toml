@@ -3,8 +3,8 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "darkfly-tool-modern"
-version = "5.1.0"
+name = "darkfly-tool"
+version = "5.1.1"
 description = "Modern Python 3 CLI for DarkFly-Tool (wrapper/launcher for security tools)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,6 +20,10 @@ classifiers = [
   "Environment :: Console",
   "Operating System :: POSIX :: Linux"
 ]
+
+[project.urls]
+Homepage = "https://github.com/reblox01/DarkFly-Tool"
+Source = "https://github.com/reblox01/DarkFly-Tool"
 
 [project.optional-dependencies]
 # Keep dependencies minimal; YAML can be added later if desired.
