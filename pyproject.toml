@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "darkfly-tool-modern"
-version = "5.0.0a1"
+version = "5.1.0"
 description = "Modern Python 3 CLI for DarkFly-Tool (wrapper/launcher for security tools)"
 readme = "README.md"
 requires-python = ">=3.10"
