@@ -8,6 +8,14 @@ A curated installer for security tools on Termux and Linux. Pick a tool, see exa
 
 Current release: **[DarkFly-Tool v5.1](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)** (next-gen engine, Phases 1-3). The tools here are for systems you own or are explicitly authorized to test.
 
+## Legal notice
+
+DarkFly-Tool installs third-party security tools. Those tools are dual-use: security professionals use them to test systems they own or are authorized to test, and they can also be misused.
+
+Use DarkFly only on systems you own or have explicit permission to test. Unauthorized access to, interception of, or disruption of computer systems is illegal in most jurisdictions, including Morocco. The authors and contributors provide this software as-is and accept no responsibility for misuse.
+
+DarkFly itself installs nothing malicious: it never downloads code at startup, never runs hidden commands, and the catalog contains no bomber, spam, DDoS, phishing, or malware tools. Tools marked `offensive` in the catalog print a lawful-use notice before install.
+
 ## Quickstart
 
 From a Python 3.10+ environment on Linux, Termux, or an RHEL-family system:
