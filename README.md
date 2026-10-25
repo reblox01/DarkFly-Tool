@@ -1,8 +1,65 @@
 # DarkFly-Tool
 
-The current main version is **DarkFly v5** – a modern Python 3 CLI that runs on current Linux/Termux systems. The previous **DarkFly v4.0** (Python 2, Termux-focused) installer is still included below as a legacy option.
+[![Release](https://img.shields.io/github/v/release/reblox01/DarkFly-Tool)](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
-In its original (v4) form, DarkFly-Tool is an installation tool for installing tools. this tool makes it easy for you. so you don't need to type git clone or look for the github repository. You only have to choose the number. which tool you want to install. there are 530 tools ready for intall. and for those of you who like to have fun. there are 7 SMS spam tools that are ready to use, you just need to choose spam to use the target number. there is a tocopedia DLL.
+A curated installer for security tools on Termux and Linux. Pick a tool, see exactly what will be installed, then install it for real, with a manifest that makes uninstall and updates clean. No obfuscated lists, no code fetched at startup, no bomber or spam tools.
+
+Current release: **[DarkFly-Tool v5.1](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)** (next-gen engine, Phases 1-3). The tools here are for systems you own or are explicitly authorized to test.
+
+## Quickstart
+
+From a Python 3.10+ environment on Linux, Termux, or an RHEL-family system:
+
+```bash
+git clone https://github.com/reblox01/DarkFly-Tool
+cd DarkFly-Tool
+python -m pip install -e .
+```
+
+Then:
+
+```bash
+DarkFly5 search nuclei            # search id, name, aliases, description, categories
+DarkFly5 install nmap --dry-run   # print the plan for THIS environment, change nothing
+DarkFly5 install netexec          # shows the plan, asks, then installs (journaled, resumable)
+DarkFly5 installed                # list what the manifest says is installed
+DarkFly5 doctor                   # environment, distro family, tools on PATH, catalog validation
+```
+
+`--dry-run` is the safe way to try everything: it prints every step, the size estimate, and any warnings, and executes nothing.
+
+## What is in v5.1
+
+- **Phase 1: a real install engine.** Catalog schema v2, a planner that builds per-environment install plans (`pkg` on Termux, `apt-get` on Debian Linux, `dnf` on RHEL-family), journaled resumable installs, an `installed.json` manifest, and new commands: `search`, `install` with `--dry-run`, `uninstall`, `installed`, `doctor`.
+- **Phase 2: a 62-tool catalog.** Core tools plus the modern layer (ProjectDiscovery, NetExec, AD tooling), resources like SecLists, and emerging tools, all with maintenance status, tiers, and platform flags. New `update` and `verify` commands, a binary backend with SHA-256 verification, and the catalog packaged inside the wheel.
+- **Phase 3: cleanup and breadth.** The legacy catalog is retired (`list`, `info`, and `menu` now read catalog v2), RHEL-family support lands, `verify --versions` probes installed tools, ProjectDiscovery tools can delegate to `pdtm` when opted in, and an upstream liveness checker watches every catalog URL.
+
+Full detail: [docs/DESIGN.md](docs/DESIGN.md). Full changelog: [the v5.1 release notes](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1).
+
+## Catalog at a glance
+
+62 curated tools. Not 530: every entry is maintained, pinned where the backend allows it, and tested by planning it on every simulated environment.
+
+```mermaid
+pie title Catalog by tier (62 tools)
+    "Tier 0 - core" : 14
+    "Tier 1 - modern layer" : 40
+    "Tier 2 - resources" : 5
+    "Tier 3 - emerging" : 3
+```
+
+```mermaid
+pie title Catalog by install backend
+    "apt / pkg" : 15
+    "go install" : 15
+    "pipx" : 14
+    "git clone (pinned)" : 5
+    "manual (documented)" : 13
+```
+
+The binary backend (vendor release, SHA-256 verified before install) is built and tested but ships with no catalog entry yet, because no release checksum has been maintainer-verified so far. Desktop-only GUI tools (Burp, ZAP, Wireshark) are listed as information and are never fake-installed on Termux.
 
 ## Version comparison
 
@@ -12,6 +69,10 @@ In its original (v4) form, DarkFly-Tool is an installation tool for installing t
 | Python 2 support                             | ✗                    | ✓                      |
 | Target: Linux                                | ✓                    | ✗ (not reliable)       |
 | Target: Termux                               | ✓                    | ✓                      |
+| Target: RHEL-family (dnf)                    | ✓                    | ✗                      |
+| Real installs (not just suggestions)         | ✓                    | ✓ (Python 2 era)       |
+| Uninstall and updates from a manifest        | ✓                    | ✗                      |
+| Dry-run plans before any install             | ✓                    | ✗                      |
 | Actively maintained                          | ✓                    | ✗ (frozen legacy)      |
 | Configurable tools via `catalog.json` (schema v2)  | ✓                    | ✗                      |
 | Obfuscated/installer-based tool management   | ✗                    | ✓                      |
@@ -21,16 +82,16 @@ In its original (v4) form, DarkFly-Tool is an installation tool for installing t
 | Aspect              | DarkFly v5 (current)                                           | DarkFly v4.0 (legacy)                                                |
 | ------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
 | Implementation      | Python 3 CLI in `darkfly/`                                     | Python 2 installer `install.py` plus `.module` and `lib` scripts     |
-| Target environments | Linux and Termux with Python 3.10+ and pip                     | Primarily Termux (Android); regular Linux may not work reliably      |
+| Target environments | Linux, Termux, and RHEL-family with Python 3.10+ and pip       | Primarily Termux (Android); regular Linux may not work reliably      |
 | Status              | Active / modern path                                           | Frozen legacy path, kept for historical compatibility                |
-| Install / usage     | `python -m pip install -e .[dev]` then `DarkFly5 ...`          | `python2 install.py` then `DarkFly`                                  |
+| Install / usage     | `python -m pip install -e .` then `DarkFly5 ...`               | `python2 install.py` then `DarkFly`                                  |
 | Tool list           | Config-driven via `catalog.json` schema v2 (easy to extend/modify) | Hard-coded/obfuscated inside legacy Python 2 and `.module` artifacts |
 
 ---
 
 ## Architecture: the next-generation engine
 
-The next-generation install engine (Phases 1 and 2) lives in the v5 package, alongside the classic v5 commands. The full design document is [docs/DESIGN.md](docs/DESIGN.md). This section is the short version, including the schemas.
+The next-generation install engine (Phases 1-3) lives in the v5 package, alongside the classic v5 commands. The full design document is [docs/DESIGN.md](docs/DESIGN.md). This section is the short version, including the schemas.
 
 ### How it fits together
 
@@ -63,15 +124,29 @@ The next-generation install engine (Phases 1 and 2) lives in the v5 package, alo
                                               |
                             +-----------------v------------------+
                             | the system itself: pkg (Termux),   |
-                            | apt-get (Linux), pipx, go, git     |
+                            | apt-get (Linux), dnf (RHEL),       |
+                            | pipx, go, git                      |
                             +------------------------------------+
+```
+
+### One install, step by step
+
+```mermaid
+flowchart LR
+    A[DarkFly5 install nmap] --> B[Build plan for this environment]
+    B --> C{--dry-run?}
+    C -->|Yes| D[Show plan and stop]
+    C -->|No| E[Show plan, ask to confirm]
+    E --> F[Execute step by step, journaled]
+    F --> G[Record in installed.json]
+    G --> H[Verify with DarkFly5 verify]
 ```
 
 Design rules that shape everything above:
 
 - The catalog is plain JSON in the repo: diff-able in pull requests, auditable by anyone. No obfuscated tool lists, no code fetched at startup.
 - Installing is two steps: build a **plan** (data), then execute it. `--dry-run` prints the plan and executes nothing.
-- Backends are chosen per tool by trust: signed `apt`/`pkg` package first, then a vendor `binary` release whose SHA-256 is verified before install, then `pipx` or `go install` at a pinned version, then a pinned `git` clone (with a visible warning), then `manual` (documented, never fake-installed).
+- Backends are chosen per tool by trust: signed `apt`/`pkg`/`dnf` package first, then a vendor `binary` release whose SHA-256 is verified before install, then `pipx` or `go install` at a pinned version, then a pinned `git` clone (with a visible warning), then `manual` (documented, never fake-installed).
 - Everything DarkFly installs is recorded in a manifest, so `uninstall` removes exactly what was added, and nothing else.
 - Installs are journaled: if Android kills Termux mid-install (the signal 9 problem), the next run resumes where it stopped instead of starting over.
 
@@ -97,6 +172,7 @@ Top level: `{ "schema_version": 2, "tools": [ ... ] }`. The catalog currently sh
 | `install.package` | string | Package name, Go module path, or repo URL, depending on backend. |
 | `install.binary` | object | Binary backend only: download `url` (with `{arch}` and `{version}` placeholders), per-architecture `sha256` checksums, `archive` (`none`, `tar.gz`, `zip`), and the installed `bin_name`. The checksum is verified before anything is installed, and an architecture with no checksum cannot be installed. |
 | `install.termux_package` | string or null | Termux `pkg` name when it differs from `package`. |
+| `install.rhel_package` | string or null | RHEL `dnf` name when it differs from `package`. |
 | `install.version_pin` | string or null | Version or commit to pin, where the backend supports one. |
 | `install.deps_pkg`, `install.deps_apt` | list of string | Extra packages to install first, per platform. |
 | `run` | string | Command the user runs after install. |
@@ -167,13 +243,16 @@ DarkFly5 update                   # update everything DarkFly installed (or: upd
 DarkFly5 verify                   # check installed tools: manifest, run command, files
 DarkFly5 verify --versions        # also probe each tool's --version (opt-in)
 DarkFly5 doctor                   # environment, distro family, tools on PATH, catalog validation
+DarkFly5 list                     # list catalog tools with categories
+DarkFly5 info netexec             # details plus the install plan for this environment
+DarkFly5 menu                     # pick a tool by number and see its info
 ```
 
 ### Distro support, pdtm, and upstream checks
 
 - **Distro families.** On Linux the planner reads `/etc/os-release` and picks the package manager: `pkg` on Termux, `dnf` on RHEL-family systems (RHEL, Fedora, CentOS, AlmaLinux, Rocky, Oracle Linux), `apt-get` on Debian-family and anything else. The catalog's `install.rhel_package` field overrides the package name on RHEL where it is set (today only netcat, which maps to `nmap-ncat`); every other RHEL package name still needs a real-distro verification pass, and RHEL support so far is plan-level simulation, not a real RHEL run (see docs/DESIGN.md).
 - **pdtm, opt-in only.** With `DARKFLY_PDTM=1` set and `pdtm` on PATH, ProjectDiscovery tools (Nuclei, Subfinder, httpx, Naabu, Katana, dnsx) install and update through `pdtm -i` / `pdtm -u` instead of `go install`. Without both conditions the default plan is unchanged.
-- **Upstream liveness.** `tools/check_upstream.py` HEAD-checks every catalog homepage and source URL and fails on any dead link; it runs weekly from `.github/workflows/upstream-check.yml`.
+- **Upstream liveness.** `tools/check_upstream.py` HEAD-checks every catalog homepage and source URL and fails on any dead link. A weekly workflow for it is defined in `.github/workflows/upstream-check.yml`.
 
 ### Testing and simulation
 
@@ -191,60 +270,32 @@ How the simulation works:
 - **Fake runner, fake downloader.** Installs execute through a runner interface and downloads through a single downloader function. Tests substitute fakes, so the journal, the resume-after-interruption logic, manifest writes, uninstall reversal, and the binary backend's SHA-256 check (including the mismatch case, which must install nothing) are all exercised end to end with zero side effects.
 - **Try a simulation yourself.** `--dry-run` is the same plan the tests assert on, shown to you: `DarkFly5 install metasploit-framework --dry-run` prints the size estimate, the heavy-install and lawful-use warnings, and every step it would take, then changes nothing. `DarkFly5 doctor` validates the catalog and reports your environment the same way the test suite sees it.
 
-CI runs the suite on Python 3.10 and 3.12 for every push and pull request.
+CI (pytest on Python 3.10 and 3.12, catalog validation, dry-run smoke) is defined in `.github/workflows/ci.yml`.
+
+### Contributing: add a tool
+
+1. Add one entry to `catalog.json` (schema v2 above) and mirror it into `darkfly/catalog.json`, which ships inside the package. A test keeps the two copies identical.
+2. Pick the most trusted backend that really works: signed package, then verified binary, then `pipx` / `go install` at a pin, then pinned `git`, then `manual` with an honest description. Never invent a version pin or a checksum.
+3. Set `platforms` honestly: a GUI-only or desktop-only tool gets `gui_required: true` and is never fake-installed on Termux.
+4. Run the suite (`pytest`). Every entry is planned on every simulated environment, so a broken entry fails the build.
+5. No bomber, spam, DDoS, or phishing tools. Ever.
 
 ---
 
-## DarkFly v5 – modern Python 3 CLI (Linux / Termux)
+## Development
 
-DarkFly v5 is a new, configurable CLI that does **not** depend on the old Python 2 installer. It is implemented as a normal Python package in the `darkfly/` directory.
-
-### Install (editable) for development
-
-From a Python 3.10+ environment on Linux (or Termux with Python 3):
+For working on DarkFly itself, install it editable with the dev extras:
 
 ```bash
-python -m pip install --upgrade pip
 python -m pip install -e .[dev]
-```
-
-This installs the `DarkFly5` command and development dependencies (like pytest).
-
-### Usage
-
-List available tools (from the `catalog.json` catalog):
-
-```bash
-DarkFly5 list
-```
-
-Show details and suggested install commands for a specific tool:
-
-```bash
-DarkFly5 info nmap
-```
-
-Open a simple interactive menu:
-
-```bash
-DarkFly5 menu
-```
-
-You can add or change tools by editing `catalog.json` in the repository root (schema v2, documented in docs/DESIGN.md). The same file ships inside the package, and a test keeps the two copies identical.
-
-### Running tests (modern CLI)
-
-After installing with the `dev` extras:
-
-```bash
 pytest
 ```
 
-This runs the tests under `tests/` for the modern Python 3 CLI.
+This installs the `DarkFly5` command and the test dependencies.
 
 ---
 
-## DarkFly v4 – legacy Python 2 installer (Termux)
+## DarkFly v4 - legacy Python 2 installer (Termux)
 
 > **Warning:** DarkFly v4 depends on Python 2 and is kept for historical compatibility. Modern systems may not ship Python 2 by default.
 >
