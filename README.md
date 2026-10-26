@@ -8,6 +8,8 @@ A curated installer for security tools on Termux and Linux. Pick a tool, see exa
 
 Current release: **[DarkFly-Tool v5.1](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)** (next-gen engine, Phases 1-3). The tools here are for systems you own or are explicitly authorized to test.
 
+Research: the design blueprint behind this engine, catalog design, install engine, safety rules and test results, lives at [darkfly.sohailkoutari.com](https://darkfly.sohailkoutari.com).
+
 ## Legal notice
 
 DarkFly-Tool installs third-party security tools. Those tools are dual-use: security professionals use them to test systems they own or are authorized to test, and they can also be misused.
