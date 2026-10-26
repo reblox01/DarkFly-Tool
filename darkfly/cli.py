@@ -38,6 +38,19 @@ from darkfly import verify as verify_mod
 # design, safety rules and test results behind DarkFly v5.
 RESEARCH_URL = "https://darkfly.sohailkoutari.com"
 
+# Startup banner shown by the interactive menu. Plain ASCII only, so it
+# renders on any terminal, plus the version, credits and project links.
+BANNER = r""" ____             _     __ _
+|  _ \  __ _ _ __| | __/ _| |_   _
+| | | |/ _` | '__| |/ / |_| | | | |
+| |_| | (_| | |  |   <|  _| | |_| |
+|____/ \__,_|_|  |_|\_\_| |_|\__, |
+                             |___/
+v5.1.1 - curated installer for Termux and Linux
+Rebuilt by 0x8D (@reblox01)
+Repo: https://github.com/reblox01/DarkFly-Tool
+Research: darkfly.sohailkoutari.com"""
+
 
 # ---------------------------------------------------------------------------
 # Legacy commands (list / info / menu), re-based on catalog v2.
@@ -121,8 +134,7 @@ def _cmd_menu(args: argparse.Namespace) -> int:
         return 1
 
     tools = catalog.tools
-    print("DarkFly v5 - simple menu")
-    print(f"Research: {RESEARCH_URL}")
+    print(BANNER)
     print("Select a tool by number, or 'q' to quit.\n")
 
     for idx, t in enumerate(tools, start=1):
