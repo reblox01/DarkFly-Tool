@@ -34,6 +34,10 @@ from darkfly import manifest as manifest_mod
 from darkfly import planner as planner_mod
 from darkfly import verify as verify_mod
 
+# Public research site for this engine: the design blueprint, catalog
+# design, safety rules and test results behind DarkFly v5.
+RESEARCH_URL = "https://darkfly.sohailkoutari.com"
+
 
 # ---------------------------------------------------------------------------
 # Legacy commands (list / info / menu), re-based on catalog v2.
@@ -118,6 +122,7 @@ def _cmd_menu(args: argparse.Namespace) -> int:
 
     tools = catalog.tools
     print("DarkFly v5 - simple menu")
+    print(f"Research: {RESEARCH_URL}")
     print("Select a tool by number, or 'q' to quit.\n")
 
     for idx, t in enumerate(tools, start=1):
@@ -499,7 +504,7 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="DarkFly5", description="Modern DarkFly CLI (Python 3)")
+    parser = argparse.ArgumentParser(prog="DarkFly5", description="Modern DarkFly CLI (Python 3)", epilog=f"Research and design blueprint: {RESEARCH_URL}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_list = sub.add_parser("list", help="List available tools")
