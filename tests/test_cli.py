@@ -136,9 +136,17 @@ def test_cli_menu_picks_tool_and_quits(monkeypatch, capsys, tmp_path: Path):
     assert exit_code == 0
     assert "My Tool" in captured.out
     assert "darkfly.sohailkoutari.com" in captured.out
+    assert "Rebuilt by 0x8D (@reblox01)" in captured.out
 
 
 def test_cli_help_mentions_research_url():
     parser = cli.build_parser()
     assert cli.RESEARCH_URL == "https://darkfly.sohailkoutari.com"
     assert "darkfly.sohailkoutari.com" in (parser.epilog or "")
+
+
+def test_cli_banner_contents():
+    assert "Rebuilt by 0x8D (@reblox01)" in cli.BANNER
+    assert "https://github.com/reblox01/DarkFly-Tool" in cli.BANNER
+    assert "darkfly.sohailkoutari.com" in cli.BANNER
+    assert cli.BANNER.isascii()
