@@ -6,6 +6,8 @@
 
 A curated installer for security tools on Termux and Linux. Pick a tool, see exactly what will be installed, then install it for real, with a manifest that makes uninstall and updates clean. No obfuscated lists, no code fetched at startup, no bomber or spam tools.
 
+![DarkFly5 menu home screen](docs/images/darkfly-cli-home.png)
+
 Current release: **[DarkFly-Tool v5.1](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)** (next-gen engine, Phases 1-3). The tools here are for systems you own or are explicitly authorized to test.
 
 Research: the design blueprint behind this engine, catalog design, install engine, safety rules and test results, lives at [darkfly.sohailkoutari.com](https://darkfly.sohailkoutari.com).
@@ -79,9 +81,7 @@ The binary backend (vendor release, SHA-256 verified before install) is built an
 
 ## Tools in the CLI
 
-![DarkFly5 menu home screen](docs/images/darkfly-cli-home.png)
-
-The interactive menu (`DarkFly5 menu`) lists all 62 tools. The screenshot above shows the top of the menu; the full list is below. Use the key with any command, for example `DarkFly5 install nmap --dry-run`.
+The interactive menu (`DarkFly5 menu`) lists all 62 tools, shown in the screenshot at the top of this README. The full list is below. Use the key with any command, for example `DarkFly5 install nmap --dry-run`.
 
 | # | Tool | Key | Categories |
 | --- | --- | --- | --- |
