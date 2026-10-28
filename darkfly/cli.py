@@ -46,7 +46,7 @@ BANNER = r""" ____             _     __ _
 | |_| | (_| | |  |   <|  _| | |_| |
 |____/ \__,_|_|  |_|\_\_| |_|\__, |
                              |___/
-v5.1.1 - curated installer for Termux and Linux
+v5.1.2 - curated installer for Termux and Linux
 Rebuilt by 0x8D (@reblox01)
 Repo: https://github.com/reblox01/DarkFly-Tool
 Research: darkfly.sohailkoutari.com"""
