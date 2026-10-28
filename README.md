@@ -1,6 +1,6 @@
 # DarkFly-Tool
 
-[![Release](https://img.shields.io/github/v/release/reblox01/DarkFly-Tool)](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)
+[![Release](https://img.shields.io/github/v/release/reblox01/DarkFly-Tool)](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1.2)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
@@ -8,7 +8,7 @@ A curated installer for security tools on Termux and Linux. Pick a tool, see exa
 
 ![DarkFly5 menu home screen](docs/images/darkfly-cli-home.png)
 
-Current release: **[DarkFly-Tool v5.1](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1)** (next-gen engine, Phases 1-3). The tools here are for systems you own or are explicitly authorized to test.
+Current release: **[DarkFly-Tool v5.1.2](https://github.com/reblox01/DarkFly-Tool/releases/tag/darkfly-v5.1.2)** (next-gen engine, Phases 1-3). The tools here are for systems you own or are explicitly authorized to test.
 
 Research: the design blueprint behind this engine, catalog design, install engine, safety rules and test results, lives at [darkfly.sohailkoutari.com](https://darkfly.sohailkoutari.com).
 
