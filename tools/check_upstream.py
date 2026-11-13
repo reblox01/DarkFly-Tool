@@ -38,8 +38,10 @@ def check_url(url: str) -> str:
                                         timeout=TIMEOUT_SECONDS) as resp:
                 return f"ok ({resp.status})"
         except urllib.error.HTTPError as exc:
-            if exc.code in (405, 501) and method == "HEAD":
-                continue  # some hosts refuse HEAD; retry with GET
+            if exc.code in (405, 501, 404) and method == "HEAD":
+                continue  # some hosts refuse HEAD or answer it
+                # with 404 while GET serves the page fine
+                # (e.g. portswigger.net); retry with GET
             return f"http {exc.code}"
         except urllib.error.URLError as exc:
             return f"error: {exc.reason}"

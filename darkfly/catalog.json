@@ -1199,7 +1199,7 @@
         "post-exploitation"
       ],
       "description": "Python WinRM shell for Windows hosts: interactive sessions, file transfer, and service execution once you hold credentials. Use for post-exploitation access on ports 5985 and 5986.",
-      "homepage": "https://github.com/ardalann/evil-winrm-py",
+      "homepage": "https://github.com/adityatelange/evil-winrm-py",
       "id": "evil-winrm-py",
       "install": {
         "backend": "pipx",
@@ -1209,7 +1209,7 @@
         "termux_package": null,
         "version_pin": null
       },
-      "last_verified": "2026-10-23",
+      "last_verified": "2026-11-13",
       "license": "MIT",
       "name": "evil-winrm-py",
       "platforms": {
@@ -1219,7 +1219,7 @@
       },
       "run": "evil-winrm-py",
       "size_mb_estimate": 20,
-      "source": "https://github.com/ardalann/evil-winrm-py",
+      "source": "https://github.com/adityatelange/evil-winrm-py",
       "status": "maintained",
       "successor_to": null,
       "tier": 1
